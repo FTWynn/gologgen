@@ -21,7 +21,7 @@ type dataStore struct {
 
 func init() {
 	// Only log the debug severity or above.
-	log.SetLevel(log.InfoLevel)
+	log.SetLevel(log.DebugLevel)
 }
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 		log.Error("something went amiss on conf file read")
 		return
 	}
-	log.Info("Read in conf from file: ", string(confText))
+	log.Debug("Read in conf from file: ", string(confText))
 
 	// Unmarshal the JSON into a map
 	var cd map[string]string
@@ -41,8 +41,8 @@ func main() {
 		log.Error("something went amiss on parse")
 		return
 	}
-	log.Info("Parsed conf results", cd)
-	log.Info("cd Type: ", reflect.TypeOf(cd))
+	log.Debug("Parsed conf results", cd)
+	log.Debug("cd Type: ", reflect.TypeOf(cd))
 
 	// Read in the data file
 	dataText, err4 := ioutil.ReadFile("gologgen.data")
@@ -50,7 +50,7 @@ func main() {
 		log.Error("something went amiss on data file read")
 		return
 	}
-	log.Info("Read in data from file: ", string(dataText))
+	log.Debug("Read in data from file: ", string(dataText))
 
 	// Convert the data into something we can work with
 	// TODO: Probably should turn into struct as well
@@ -60,10 +60,10 @@ func main() {
 		log.Error("something went amiss on parse")
 		return
 	}
-	log.Info("Parse in data in memory: ", string(dataText))
+	log.Debug("Parse in data in memory: ", string(dataText))
 
 	lines := dataJSON["lines"]
-	log.Info("Lines parsed", lines)
+	log.Debug("Lines parsed", lines)
 
 	// Loop through lines and post to Sumo
 	for _, v := range lines {
@@ -74,7 +74,7 @@ func main() {
 			return
 		}
 		defer resp.Body.Close()
-		log.Info("Response from Sumo: ", resp)
+		log.Debug("Response from Sumo: ", resp)
 	}
 
 	/*// Test post, please ignore
