@@ -10,14 +10,15 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-/* TODO: Fix these structs so the JSON derefs into them
-type confStore struct {
-	httpLoc string `json:"httpLoc"`
+// ConfStore holds all the config data from the conf file
+type ConfStore struct {
+	HTTPLoc string `json:"httpLoc"`
 }
 
-type dataStore struct {
-	text string `json:"text"`
-}*/
+// DataStore holds all the data info for a given simulated log line
+type DataStore struct {
+	Text string `json:"text"`
+}
 
 func init() {
 	// Only log the debug severity or above.
@@ -34,8 +35,8 @@ func main() {
 	log.Debug("Read in conf from file: ", string(confText))
 
 	// Unmarshal the JSON into a map
-	var cd map[string]string
-	//var cd confStore //TODO: Fix the importing into a struct
+	//var cd map[string]string
+	var cd ConfStore
 	err2 := json.Unmarshal(confText, &cd)
 	if err2 != nil {
 		log.Error("something went amiss on parse")
@@ -55,6 +56,7 @@ func main() {
 	// Convert the data into something we can work with
 	// TODO: Probably should turn into struct as well
 	var dataJSON map[string][]map[string]string
+	//var dataJSON []DataStore
 	err3 := json.Unmarshal(dataText, &dataJSON)
 	if err3 != nil {
 		log.Error("something went amiss on parse")
@@ -64,11 +66,10 @@ func main() {
 
 	lines := dataJSON["lines"]
 	log.Debug("Lines parsed", lines)
-
 	// Loop through lines and post to Sumo
 	for _, v := range lines {
 		var tester = []byte(v["text"])
-		resp, err5 := http.Post(cd["httpLoc"], "text/plain", bytes.NewBuffer(tester))
+		resp, err5 := http.Post(cd.HTTPLoc, "text/plain", bytes.NewBuffer(tester))
 		if err5 != nil {
 			log.Error("something went amiss on submitting to Sumo")
 			return
@@ -76,10 +77,4 @@ func main() {
 		defer resp.Body.Close()
 		log.Debug("Response from Sumo: ", resp)
 	}
-
-	/*// Test post, please ignore
-	var tester = []byte("Test post, please ignore")
-	resp, err := http.Post(cd["httpLoc"], "text/plain", bytes.NewBuffer(tester))
-	defer resp.Body.Close()
-	log.Print("Response from Sumo: ", resp)*/
 }
