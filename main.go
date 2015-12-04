@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -24,9 +24,7 @@ func main() {
 
 	// Test post, please ignore
 	var tester = []byte("Test post, please ignore")
-	//c := bufio.Reader.ReadString(tester)
-	//copy(c, tester)
 	resp, err := http.Post(cd["httpLoc"], "text/plain", bytes.NewBuffer(tester))
 	defer resp.Body.Close()
-	fmt.Println(resp)
+	log.Print(resp)
 }
