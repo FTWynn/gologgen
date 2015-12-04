@@ -59,18 +59,14 @@ func main() {
 
 	lines := dataJSON["lines"]
 	log.Debug("Lines parsed", lines)
+
 	// Loop through lines and post to Sumo
 	for _, v := range lines {
 		var tester = v["text"]
-		go loggenrunner.RunLogLine(cd.HTTPLoc, tester)
-		/*resp, err5 := http.Post(cd.HTTPLoc, "text/plain", bytes.NewBuffer(tester))
-		if err5 != nil {
-			log.Error("something went amiss on submitting to Sumo")
-			return
-		}
-		defer resp.Body.Close()
-		log.Debug("Response from Sumo: ", resp)*/
+		go loggenrunner.RunLogLine(cd.HTTPLoc, tester, 1)
 	}
+
+	// This will kill al the goroutines when enter is typed in the console
 	var input string
 	fmt.Scanln(&input)
 }
