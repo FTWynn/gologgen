@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
+	"fmt"
+	"gologgen/loggenrunner"
 	"io/ioutil"
-	"net/http"
 	"reflect"
 
 	log "github.com/Sirupsen/logrus"
@@ -15,13 +15,7 @@ type ConfStore struct {
 	HTTPLoc string `json:"httpLoc"`
 }
 
-// DataStore holds all the data info for a given simulated log line
-type DataStore struct {
-	Text string `json:"text"`
-}
-
 func init() {
-	// Only log the debug severity or above.
 	log.SetLevel(log.DebugLevel)
 }
 
@@ -34,8 +28,7 @@ func main() {
 	}
 	log.Debug("Read in conf from file: ", string(confText))
 
-	// Unmarshal the JSON into a map
-	//var cd map[string]string
+	// Unmarshal the JSON into a struct
 	var cd ConfStore
 	err2 := json.Unmarshal(confText, &cd)
 	if err2 != nil {
@@ -66,15 +59,14 @@ func main() {
 
 	lines := dataJSON["lines"]
 	log.Debug("Lines parsed", lines)
+
 	// Loop through lines and post to Sumo
 	for _, v := range lines {
-		var tester = []byte(v["text"])
-		resp, err5 := http.Post(cd.HTTPLoc, "text/plain", bytes.NewBuffer(tester))
-		if err5 != nil {
-			log.Error("something went amiss on submitting to Sumo")
-			return
-		}
-		defer resp.Body.Close()
-		log.Debug("Response from Sumo: ", resp)
+		var tester = v["text"]
+		go loggenrunner.RunLogLine(cd.HTTPLoc, tester, 1)
 	}
+
+	// This will kill al the goroutines when enter is typed in the console
+	var input string
+	fmt.Scanln(&input)
 }
