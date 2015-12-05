@@ -121,7 +121,6 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 		req.Header.Add("X-Sumo-Category", SumoCategory)
 		req.Header.Add("X-Sumo-Host", SumoHost)
 		req.Header.Add("X-Sumo-Name", SumoName)
-		//req.Header.Add("If-None-Match", `W/"wyzzy"`) TODO: Replace with real headers
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Error("something went amiss on submitting to Sumo")
