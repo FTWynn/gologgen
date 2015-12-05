@@ -103,10 +103,12 @@ func randomizeString(text string) []byte {
 }
 
 // RunLogLine makes repeated calls to an endpoint given the configs of the log line
-func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64) {
+func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, SumoCategory string, SumoHost string, SumoName string) {
 	log.Info("Starting log runner")
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	client := &http.Client{}
 
 	// Begin loop to post the value until we're done
 	for {
@@ -115,7 +117,12 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 
 		// Post to Sumo
 		log.Info("Sending log to Sumo: ", stringBody)
-		resp, err := http.Post(HTTPLoc, "text/plain", bytes.NewBuffer(stringBody))
+		req, err := http.NewRequest("POST", HTTPLoc, bytes.NewBuffer(stringBody))
+		req.Header.Add("X-Sumo-Category", SumoCategory)
+		req.Header.Add("X-Sumo-Host", SumoHost)
+		req.Header.Add("X-Sumo-Name", SumoName)
+		//req.Header.Add("If-None-Match", `W/"wyzzy"`) TODO: Replace with real headers
+		resp, err := client.Do(req)
 		if err != nil {
 			log.Error("something went amiss on submitting to Sumo")
 			return
