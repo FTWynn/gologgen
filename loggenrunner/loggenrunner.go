@@ -26,7 +26,7 @@ type RunLogLineParams struct {
 }
 
 // randomizeString takes a string, looks for the random tokens (int and string), and replaces them, returning a []byte
-func randomizeString(text string) []byte {
+func randomizeString(text string) string {
 	goodstring, err := regexp.MatchString(`\$\[[^\]]+\]`, text)
 	if err != nil {
 		log.Error("Something broke on parsing the text string with a regular expression")
@@ -34,7 +34,7 @@ func randomizeString(text string) []byte {
 
 	//Return original string if no randomizers
 	if !goodstring {
-		return []byte(text)
+		return text
 	}
 
 	re := regexp.MustCompile(`\$\[[^\]]+\]`)
@@ -99,7 +99,7 @@ func randomizeString(text string) []byte {
 
 	log.Info("Randomization complete. New string: ", strings.Join(newLogLine, ""))
 
-	return []byte(strings.Join(newLogLine, ""))
+	return strings.Join(newLogLine, "")
 }
 
 // RunLogLine makes repeated calls to an endpoint given the configs of the log line
@@ -113,7 +113,7 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 	// Begin loop to post the value until we're done
 	for {
 		// Randomize the post body if need be
-		var stringBody = randomizeString(PostBody)
+		var stringBody = []byte(randomizeString(PostBody))
 
 		// Post to Sumo
 		log.Info("Sending log to Sumo: ", stringBody)
