@@ -25,8 +25,9 @@ type RunLogLineParams struct {
 	IntervalStdDev float64
 }
 
-// randomizeString takes a string, looks for the random tokens (int and string), and replaces them, returning a []byte
-func randomizeString(text string) string {
+// randomizeString takes a string, looks for the random tokens (int and string), and replaces them
+func randomizeString(text string, timeformat string) string {
+	// Bail if we can't get any randomizers
 	goodstring, err := regexp.MatchString(`\$\[[^\]]+\]`, text)
 	if err != nil {
 		log.Error("Something broke on parsing the text string with a regular expression")
@@ -37,10 +38,12 @@ func randomizeString(text string) string {
 		return text
 	}
 
+	// Find all randomizing tokens
 	re := regexp.MustCompile(`\$\[[^\]]+\]`)
 	randos := re.FindAllString(text, -1)
 	log.Debug("Random tokens: ", randos)
 
+	// Create a list of new strings to be inserted where the tokens were
 	var newstrings []string
 	replacer := strings.NewReplacer("$[", "", "]", "")
 
@@ -50,24 +53,29 @@ func randomizeString(text string) string {
 		tempstring := replacer.Replace(rando)
 		log.Debug("tempstring: ", tempstring)
 
-		// Split into individual items
+		// Split the rnadomizer into individual items
 		tempstrings := strings.Split(tempstring, ",")
 		log.Debug("tempstrings: ", tempstrings)
 
-		// Numeric ranges will only have two items for an upper and lower bound, all the rest are string groups
-		// TODO: check for both elements, not just the first... maybe with a switch?
+		// Numeric ranges will only have two items for an upper and lower bound, timestamps have "time" and "stamp", all the rest are string groups
 		var randType string
 		num0, err := strconv.Atoi(string(tempstrings[0]))
 		num1, err2 := strconv.Atoi(string(tempstrings[1]))
 		log.Debug("num0 parsed: ", num0, err)
 		log.Debug("num1 parsed: ", num1, err2)
 		log.Debug("Length of tempstrings: ", len(tempstrings))
-		log.Debug("Category switch: ", len(tempstrings) == 2 && err == nil && err2 == nil)
+		log.Debug("Numbers?: ", len(tempstrings) == 2 && err == nil && err2 == nil)
+		log.Debug("Timestamp?: ", tempstrings[0] == "time" && tempstrings[1] == "stamp")
 
 		if len(tempstrings) == 2 && err == nil && err2 == nil {
 			randType = "Number"
 		} else {
-			randType = "Category"
+			if tempstrings[0] == "time" && tempstrings[1] == "stamp" {
+				randType = "Timestamp"
+			} else {
+				randType = "Category"
+			}
+
 		}
 
 		switch randType {
@@ -84,6 +92,13 @@ func randomizeString(text string) string {
 			log.Debug("random number: ", tempnum)
 			log.Debug("random number as string: ", strconv.Itoa(tempnum+num0))
 			newstrings = append(newstrings, strconv.Itoa(tempnum+num0))
+		case "Timestamp":
+			t := time.Now()
+			log.Debug("Current time: ", t)
+			timeformatted := t.Format(timeformat)
+			log.Debug("Formatted time: ", timeformatted)
+
+			newstrings = append(newstrings, timeformatted)
 		}
 	}
 
@@ -103,7 +118,7 @@ func randomizeString(text string) string {
 }
 
 // RunLogLine makes repeated calls to an endpoint given the configs of the log line
-func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, SumoCategory string, SumoHost string, SumoName string) {
+func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, TimeFormat string, SumoCategory string, SumoHost string, SumoName string) {
 	log.Info("Starting log runner")
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -113,7 +128,7 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 	// Begin loop to post the value until we're done
 	for {
 		// Randomize the post body if need be
-		var stringBody = []byte(randomizeString(PostBody))
+		var stringBody = []byte(randomizeString(PostBody, TimeFormat))
 
 		// Post to Sumo
 		log.Info("Sending log to Sumo: ", stringBody)

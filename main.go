@@ -65,7 +65,7 @@ func main() {
 	for _, line := range lines {
 		i, _ := strconv.Atoi(line["IntervalSecs"])
 		f, _ := strconv.ParseFloat(line["IntervalStdDev"], 64)
-		go loggenrunner.RunLogLine(cd.HTTPLoc, line["Text"], i, f, line["SumoCategory"], line["SumoHost"], line["SumoName"])
+		go loggenrunner.RunLogLine(cd.HTTPLoc, line["Text"], i, f, line["TimestampFormat"], line["SumoCategory"], line["SumoHost"], line["SumoName"])
 	}
 
 	// This will kill al the goroutines when enter is typed in the console
