@@ -67,15 +67,13 @@ func randomizeString(text string, timeformat string) string {
 		log.Debug("Numbers?: ", len(tempstrings) == 2 && err == nil && err2 == nil)
 		log.Debug("Timestamp?: ", tempstrings[0] == "time" && tempstrings[1] == "stamp")
 
-		if len(tempstrings) == 2 && err == nil && err2 == nil {
+		switch {
+		case len(tempstrings) == 2 && err == nil && err2 == nil:
 			randType = "Number"
-		} else {
-			if tempstrings[0] == "time" && tempstrings[1] == "stamp" {
-				randType = "Timestamp"
-			} else {
-				randType = "Category"
-			}
-
+		case tempstrings[0] == "time" && tempstrings[1] == "stamp":
+			randType = "Timestamp"
+		default:
+			randType = "Category"
 		}
 
 		switch randType {
