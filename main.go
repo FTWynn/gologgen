@@ -31,8 +31,8 @@ func main() {
 
 	// Unmarshal the JSON into a struct
 	var cd ConfStore
-	err2 := json.Unmarshal(confText, &cd)
-	if err2 != nil {
+	err = json.Unmarshal(confText, &cd)
+	if err != nil {
 		log.Error("something went amiss on parse")
 		return
 	}
@@ -51,8 +51,8 @@ func main() {
 	// TODO: Probably should turn into struct as well
 	var dataJSON map[string][]map[string]string
 	//var dataJSON []DataStore
-	err3 := json.Unmarshal(dataText, &dataJSON)
-	if err3 != nil {
+	err = json.Unmarshal(dataText, &dataJSON)
+	if err != nil {
 		log.Error("something went amiss on parse")
 		return
 	}
