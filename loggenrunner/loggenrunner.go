@@ -143,7 +143,6 @@ func sendLogLine(client *http.Client, stringBody []byte, params LogLinePropertie
 }
 
 // RunLogLine makes repeated calls to an endpoint given the configs of the log line
-//func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, TimeFormat string, SumoCategory string, SumoHost string, SumoName string) {
 func RunLogLine(params LogLineProperties) {
 	log.Info("Starting log runner for logline: ", params.PostBody)
 
@@ -155,6 +154,7 @@ func RunLogLine(params LogLineProperties) {
 	for {
 		// Randomize the post body if need be
 		var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
+
 		go sendLogLine(client, stringBody, params)
 
 		// Sleep until the next run

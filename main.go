@@ -62,6 +62,7 @@ func main() {
 
 	// Loop through lines and post to Sumo
 	for _, line := range lines {
+		// If no log line default, set to the global config
 		if line.HTTPLoc == "" {
 			line.HTTPLoc = cd.HTTPLoc
 		}
