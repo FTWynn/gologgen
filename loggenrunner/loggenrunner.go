@@ -125,6 +125,23 @@ func randomizeString(text string, timeformat string) string {
 	return strings.Join(newLogLine, "")
 }
 
+// sendLogLine sends the log line to the http endpoint, retrying if need be
+func sendLogLine(client *http.Client, stringBody []byte, params LogLineProperties) {
+	// Post to Sumo
+	log.Info("Sending log to Sumo: ", string(stringBody))
+	req, err := http.NewRequest("POST", params.HTTPLoc, bytes.NewBuffer(stringBody))
+	req.Header.Add("X-Sumo-Category", params.SumoCategory)
+	req.Header.Add("X-Sumo-Host", params.SumoHost)
+	req.Header.Add("X-Sumo-Name", params.SumoName)
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Error("something went amiss on submitting to Sumo")
+		return
+	}
+	defer resp.Body.Close()
+	//log.Debug("Response from Sumo: ", resp)
+}
+
 // RunLogLine makes repeated calls to an endpoint given the configs of the log line
 //func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, TimeFormat string, SumoCategory string, SumoHost string, SumoName string) {
 func RunLogLine(params LogLineProperties) {
@@ -138,20 +155,7 @@ func RunLogLine(params LogLineProperties) {
 	for {
 		// Randomize the post body if need be
 		var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
-
-		// Post to Sumo
-		log.Info("Sending log to Sumo: ", string(stringBody))
-		req, err := http.NewRequest("POST", params.HTTPLoc, bytes.NewBuffer(stringBody))
-		req.Header.Add("X-Sumo-Category", params.SumoCategory)
-		req.Header.Add("X-Sumo-Host", params.SumoHost)
-		req.Header.Add("X-Sumo-Name", params.SumoName)
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Error("something went amiss on submitting to Sumo")
-			return
-		}
-		defer resp.Body.Close()
-		//log.Debug("Response from Sumo: ", resp)
+		go sendLogLine(client, stringBody, params)
 
 		// Sleep until the next run
 		// Randomize the sleep by specifying the std dev and adding the desired mean... targeting 3%

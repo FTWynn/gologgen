@@ -39,8 +39,8 @@ func main() {
 	log.Debug("cd Type: ", reflect.TypeOf(cd))
 
 	// Read in the data file
-	dataText, err4 := ioutil.ReadFile("gologgen.data")
-	if err4 != nil {
+	dataText, err := ioutil.ReadFile("gologgen.data")
+	if err != nil {
 		log.Error("something went amiss on data file read")
 		return
 	}
