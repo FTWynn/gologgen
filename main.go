@@ -27,7 +27,7 @@ func main() {
 	}
 	log.Debug("Read in conf from file: ", string(confText))
 
-	// Unmarshal the JSON into a struct
+	// Unmarshal the Global Config JSON into a struct
 	var confData ConfStore
 	err = json.Unmarshal(confText, &confData)
 	if err != nil {
@@ -56,7 +56,7 @@ func main() {
 
 	lines := dataJSON.Lines
 
-	// Loop through lines and post to Sumo
+	// Loop through line objects and post to Sumo
 	for _, line := range lines {
 		// If no log line default, set to the global config
 		if line.HTTPLoc == "" {

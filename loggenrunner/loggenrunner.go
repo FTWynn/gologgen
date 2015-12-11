@@ -12,11 +12,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// DataStore holds all the data info for a given simulated log line
-type DataStore struct {
-	Text string `json:"text"`
-}
-
 // LogGenDataFile represents a data file
 type LogGenDataFile struct {
 	Lines []LogLineProperties `json:"lines"`
