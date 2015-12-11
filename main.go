@@ -29,14 +29,14 @@ func main() {
 	log.Debug("Read in conf from file: ", string(confText))
 
 	// Unmarshal the JSON into a struct
-	var cd ConfStore
-	err = json.Unmarshal(confText, &cd)
+	var confData ConfStore
+	err = json.Unmarshal(confText, &confData)
 	if err != nil {
 		log.Error("something went amiss on parse")
 		return
 	}
-	log.Debug("Parsed conf results", cd)
-	log.Debug("cd Type: ", reflect.TypeOf(cd))
+	log.Debug("Parsed conf results", confData)
+	log.Debug("confData Type: ", reflect.TypeOf(confData))
 
 	// Read in the data file
 	dataText, err := ioutil.ReadFile("gologgen.data")
@@ -64,7 +64,7 @@ func main() {
 	for _, line := range lines {
 		// If no log line default, set to the global config
 		if line.HTTPLoc == "" {
-			line.HTTPLoc = cd.HTTPLoc
+			line.HTTPLoc = confData.HTTPLoc
 		}
 		go loggenrunner.RunLogLine(line)
 	}
