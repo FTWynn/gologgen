@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"gologgen/loggenrunner"
 	"io/ioutil"
-	"reflect"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -36,7 +35,6 @@ func main() {
 		return
 	}
 	log.Debug("Parsed conf results", confData)
-	log.Debug("confData Type: ", reflect.TypeOf(confData))
 
 	// Read in the data file
 	dataText, err := ioutil.ReadFile("gologgen.data")
@@ -55,8 +53,6 @@ func main() {
 	}
 	log.Debug("Parse in data in memory: ", string(dataText))
 	log.Debug("Resulted parsed data: ", dataJSON)
-	log.Debug("Type of parsed data: ", reflect.TypeOf(dataJSON.Lines[0]))
-	log.Debug("Resulted parsed data: ", dataJSON.Lines[2])
 
 	lines := dataJSON.Lines
 
