@@ -35,6 +35,7 @@ func randomizeString(text string, timeformat string) string {
 
 	//Return original string if no randomizers
 	if !goodstring {
+		log.Debug("Found no random tokens: ", text)
 		return text
 	}
 
@@ -117,7 +118,7 @@ func randomizeString(text string, timeformat string) string {
 
 // RunLogLine makes repeated calls to an endpoint given the configs of the log line
 func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, TimeFormat string, SumoCategory string, SumoHost string, SumoName string) {
-	log.Info("Starting log runner")
+	log.Info("Starting log runner for logline: ", PostBody)
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -129,7 +130,7 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 		var stringBody = []byte(randomizeString(PostBody, TimeFormat))
 
 		// Post to Sumo
-		log.Info("Sending log to Sumo: ", stringBody)
+		log.Info("Sending log to Sumo: ", string(stringBody))
 		req, err := http.NewRequest("POST", HTTPLoc, bytes.NewBuffer(stringBody))
 		req.Header.Add("X-Sumo-Category", SumoCategory)
 		req.Header.Add("X-Sumo-Host", SumoHost)
@@ -140,7 +141,7 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 			return
 		}
 		defer resp.Body.Close()
-		log.Debug("Response from Sumo: ", resp)
+		//log.Debug("Response from Sumo: ", resp)
 
 		// Sleep until the next run
 		// Randomize the sleep by specifying the std dev and adding the desired mean... targeting 3%
