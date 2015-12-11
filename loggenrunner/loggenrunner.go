@@ -17,12 +17,21 @@ type DataStore struct {
 	Text string `json:"text"`
 }
 
-// RunLogLineParams holds all the data to be passed to RunLogLine
-type RunLogLineParams struct {
-	HTTPLoc        string
-	PostBody       string
-	IntervalSecs   int
-	IntervalStdDev float64
+// LogGenDataFile represents a data file
+type LogGenDataFile struct {
+	Lines []LogLineProperties `json:"lines"`
+}
+
+// LogLineProperties holds all the data relevant to running a Log Line
+type LogLineProperties struct {
+	HTTPLoc         string
+	PostBody        string  `json:"Text"`
+	IntervalSecs    int     `json:"IntervalSecs"`
+	IntervalStdDev  float64 `json:"IntervalStdDev"`
+	TimestampFormat string  `json:"TimestampFormat"`
+	SumoCategory    string  `json:"SumoCategory"`
+	SumoHost        string  `json:"SumoHost"`
+	SumoName        string  `json:"SumoName"`
 }
 
 // randomizeString takes a string, looks for the random tokens (int and string), and replaces them
@@ -117,8 +126,9 @@ func randomizeString(text string, timeformat string) string {
 }
 
 // RunLogLine makes repeated calls to an endpoint given the configs of the log line
-func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, TimeFormat string, SumoCategory string, SumoHost string, SumoName string) {
-	log.Info("Starting log runner for logline: ", PostBody)
+//func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDev float64, TimeFormat string, SumoCategory string, SumoHost string, SumoName string) {
+func RunLogLine(params LogLineProperties) {
+	log.Info("Starting log runner for logline: ", params.PostBody)
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -127,14 +137,14 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 	// Begin loop to post the value until we're done
 	for {
 		// Randomize the post body if need be
-		var stringBody = []byte(randomizeString(PostBody, TimeFormat))
+		var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
 
 		// Post to Sumo
 		log.Info("Sending log to Sumo: ", string(stringBody))
-		req, err := http.NewRequest("POST", HTTPLoc, bytes.NewBuffer(stringBody))
-		req.Header.Add("X-Sumo-Category", SumoCategory)
-		req.Header.Add("X-Sumo-Host", SumoHost)
-		req.Header.Add("X-Sumo-Name", SumoName)
+		req, err := http.NewRequest("POST", params.HTTPLoc, bytes.NewBuffer(stringBody))
+		req.Header.Add("X-Sumo-Category", params.SumoCategory)
+		req.Header.Add("X-Sumo-Host", params.SumoHost)
+		req.Header.Add("X-Sumo-Name", params.SumoName)
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Error("something went amiss on submitting to Sumo")
@@ -145,8 +155,8 @@ func RunLogLine(HTTPLoc string, PostBody string, IntervalSecs int, IntervalStdDe
 
 		// Sleep until the next run
 		// Randomize the sleep by specifying the std dev and adding the desired mean... targeting 3%
-		milliseconds := IntervalSecs * 1000
-		stdDevMilli := IntervalStdDev * 1000.0
+		milliseconds := params.IntervalSecs * 1000
+		stdDevMilli := params.IntervalStdDev * 1000.0
 		nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
 		time.Sleep(time.Duration(nextInterval) * time.Millisecond)
 	}
