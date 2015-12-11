@@ -24,7 +24,7 @@ type LogGenDataFile struct {
 
 // LogLineProperties holds all the data relevant to running a Log Line
 type LogLineProperties struct {
-	HTTPLoc         string
+	HTTPLoc         string  `json:"HTTPLoc"`
 	PostBody        string  `json:"Text"`
 	IntervalSecs    int     `json:"IntervalSecs"`
 	IntervalStdDev  float64 `json:"IntervalStdDev"`
@@ -34,7 +34,7 @@ type LogLineProperties struct {
 	SumoName        string  `json:"SumoName"`
 }
 
-// randomizeString takes a string, looks for the random tokens (int and string), and replaces them
+// randomizeString takes a string, looks for the random tokens (int, string, and timestamp), and replaces them
 func randomizeString(text string, timeformat string) string {
 	// Bail if we can't get any randomizers
 	goodstring, err := regexp.MatchString(`\$\[[^\]]+\]`, text)
