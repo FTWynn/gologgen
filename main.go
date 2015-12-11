@@ -47,9 +47,6 @@ func main() {
 	log.Debug("Read in data from file: ", string(dataText))
 
 	// Convert the data into something we can work with
-	// TODO: Probably should turn into struct as well
-	//var dataJSON map[string][]map[string]string //worked
-	//var dataJSON map[string][]LogLineProperties
 	dataJSON := loggenrunner.LogGenDataFile{}
 	err = json.Unmarshal(dataText, &dataJSON)
 	if err != nil {
@@ -65,14 +62,13 @@ func main() {
 
 	// Loop through lines and post to Sumo
 	for _, line := range lines {
-		//i, _ := strconv.Atoi(line["IntervalSecs"])
-		//f, _ := strconv.ParseFloat(line["IntervalStdDev"], 64)
-		//go loggenrunner.RunLogLine(cd.HTTPLoc, line["Text"], i, f, line["TimestampFormat"], line["SumoCategory"], line["SumoHost"], line["SumoName"])
-		line.HTTPLoc = cd.HTTPLoc
+		if line.HTTPLoc == "" {
+			line.HTTPLoc = cd.HTTPLoc
+		}
 		go loggenrunner.RunLogLine(line)
 	}
 
-	// This will kill al the goroutines when enter is typed in the console
+	// This will kill all the goroutines when enter is typed in the console
 	var input string
 	fmt.Scanln(&input)
 }
