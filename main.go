@@ -11,7 +11,8 @@ import (
 
 // ConfStore holds all the config data from the conf file
 type ConfStore struct {
-	HTTPLoc string `json:"httpLoc"`
+	HTTPLoc    string `json:"httpLoc"`
+	OutputType string `json:"OutputType"`
 }
 
 func init() {

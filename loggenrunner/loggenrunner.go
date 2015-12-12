@@ -120,8 +120,8 @@ func randomizeString(text string, timeformat string) string {
 	return strings.Join(newLogLine, "")
 }
 
-// sendLogLine sends the log line to the http endpoint, retrying if need be
-func sendLogLine(client *http.Client, stringBody []byte, params LogLineProperties) {
+// sendLogLineHTTP sends the log line to the http endpoint, retrying if need be
+func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLineProperties) {
 	// Post to Sumo
 	log.Info("Sending log to Sumo: ", string(stringBody))
 	req, err := http.NewRequest("POST", params.HTTPLoc, bytes.NewBuffer(stringBody))
@@ -150,10 +150,10 @@ func RunLogLine(params LogLineProperties) {
 		// Randomize the post body if need be
 		var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
 
-		go sendLogLine(client, stringBody, params)
+		go sendLogLineHTTP(client, stringBody, params)
 
 		// Sleep until the next run
-		// Randomize the sleep by specifying the std dev and adding the desired mean... targeting 3%
+		// Randomize the sleep by specifying the std dev and adding the desired mean
 		milliseconds := params.IntervalSecs * 1000
 		stdDevMilli := params.IntervalStdDev * 1000.0
 		nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
