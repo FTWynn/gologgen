@@ -27,6 +27,7 @@ type LogLineProperties struct {
 	SumoCategory    string  `json:"SumoCategory"`
 	SumoHost        string  `json:"SumoHost"`
 	SumoName        string  `json:"SumoName"`
+	StartTime       string  `json:"StartTime"`
 }
 
 // randomizeString takes a string, looks for the random tokens (int, string, and timestamp), and replaces them
