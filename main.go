@@ -32,7 +32,7 @@ func main() {
 	var confData ConfStore
 	err = json.Unmarshal(confText, &confData)
 	if err != nil {
-		log.Error("something went amiss on parse")
+		log.Error("something went amiss on parsing the global config file")
 		return
 	}
 	log.Debug("Parsed conf results", confData)
@@ -49,7 +49,7 @@ func main() {
 	dataJSON := loggenrunner.LogGenDataFile{}
 	err = json.Unmarshal(dataText, &dataJSON)
 	if err != nil {
-		log.Error("something went amiss on parse: ", err)
+		log.Error("something went amiss on parsing the data file: ", err)
 		return
 	}
 	log.Debug("Parse in data in memory: ", string(dataText))
