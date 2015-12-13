@@ -146,6 +146,37 @@ func RunLogLine(params LogLineProperties) {
 
 	client := &http.Client{}
 
+	// Hold until start time (or multiple thereof) if specified
+	if params.StartTime != "" {
+		re := regexp.MustCompile(`\d+`)
+		targetHourMinSec := re.FindAllString(params.StartTime, -1)
+		log.Debug("Parsed start time values: ", targetHourMinSec)
+		targetHour, _ := strconv.Atoi(targetHourMinSec[0])
+		targetMin, _ := strconv.Atoi(targetHourMinSec[1])
+		targetSec, _ := strconv.Atoi(targetHourMinSec[0])
+		targetSecs := targetHour*3600 + targetMin*60 + targetSec
+		log.Debug("Target secs is ", targetSecs)
+
+		nowTime := time.Now()
+		nowSecs := nowTime.Hour()*3600 + nowTime.Minute()*60 + nowTime.Second()
+		log.Debug("Now in Go is ", nowTime, " and the second value is ", nowSecs, " and the diff is ", targetSecs-nowSecs)
+
+		switch {
+		case targetSecs == nowSecs:
+			break
+		case targetSecs > nowSecs:
+			log.Debug("Sleeping until start for Seconds: ", targetSecs-nowSecs)
+			time.Sleep(time.Second * time.Duration(targetSecs-nowSecs))
+		case targetSecs < nowSecs:
+			if !((nowSecs-targetSecs)%params.IntervalSecs == 0) {
+				log.Debug("Start passed so sleeping until multiple start for Seconds: ", (nowSecs-targetSecs)%params.IntervalSecs)
+				time.Sleep(time.Second * time.Duration((nowSecs-targetSecs)%params.IntervalSecs))
+			} else {
+				log.Debug("We're already at a multiple! Post already!")
+			}
+		}
+	}
+
 	// Begin loop to post the value until we're done
 	for {
 		// Randomize the post body if need be

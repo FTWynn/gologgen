@@ -21,7 +21,7 @@ func init() {
 
 func main() {
 	// Read in the config file
-	confText, err := ioutil.ReadFile("gologgen.conf")
+	confText, err := ioutil.ReadFile("config/gologgen.conf")
 	if err != nil {
 		log.Error("something went amiss on conf file read")
 		return
@@ -38,7 +38,7 @@ func main() {
 	log.Debug("Parsed conf results", confData)
 
 	// Read in the data file
-	dataText, err := ioutil.ReadFile("gologgen.data")
+	dataText, err := ioutil.ReadFile("config/gologgen.data")
 	if err != nil {
 		log.Error("something went amiss on data file read")
 		return
