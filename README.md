@@ -66,7 +66,6 @@ This file contains individual loglines to be generated, along with each line's p
 
 There are a number of things I'd like to get to, but I'm not good enough to know how feasible any of them are yet. In rough order of what I'll attempt next, here's what's currently on the list.
 
-* Add syslog output
 * Add support for replays from simple captures
 * Make parameters optional in the JSONData
 * Validate that the conf and data files are correctly formatted
