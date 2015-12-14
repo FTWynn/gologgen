@@ -2,7 +2,9 @@ package loggenrunner
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -19,7 +21,10 @@ type LogGenDataFile struct {
 
 // LogLineProperties holds all the data relevant to running a Log Line
 type LogLineProperties struct {
-	HTTPLoc         string  `json:"HTTPLoc"`
+	OutputType      string
+	HTTPLoc         string `json:"HTTPLoc"`
+	SyslogType      string
+	SyslogLoc       string
 	PostBody        string  `json:"Text"`
 	IntervalSecs    int     `json:"IntervalSecs"`
 	IntervalStdDev  float64 `json:"IntervalStdDev"`
@@ -151,6 +156,13 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 	//log.Debug("Response from Sumo: ", resp)
 }
 
+//sendLogLineSyslog sends the log on tcp/udp, WITHOUT retrying
+func sendLogLineSyslog(conn *net.Conn, stringBody []byte, params LogLineProperties) {
+	// Post to Syslog
+	log.Info("Sending log to Syslog: ", string(stringBody))
+	fmt.Fprintf(*conn, string(stringBody))
+}
+
 // InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
 func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []LogLineProperties, tickerStart time.Time) {
 	RunTableObj := *RunTable
@@ -197,10 +209,20 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 
 	client := &http.Client{}
 
+	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
+	if err != nil {
+		log.Error("Failed to create syslog connection, abandoning")
+	}
+
 	// Randomize the post body if need be
 	var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
 
-	go sendLogLineHTTP(client, stringBody, params)
+	switch params.OutputType {
+	case "http":
+		go sendLogLineHTTP(client, stringBody, params)
+	case "syslog":
+		go sendLogLineSyslog(&conn, stringBody, params)
+	}
 
 }
 

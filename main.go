@@ -13,6 +13,8 @@ import (
 type ConfStore struct {
 	HTTPLoc    string `json:"httpLoc"`
 	OutputType string `json:"OutputType"`
+	SyslogType string `json:"SyslogType"`
+	SyslogLoc  string `json:"SyslogLoc"`
 }
 
 func init() {
@@ -57,9 +59,19 @@ func main() {
 
 	// Set individual log lines to global configs if need be
 	for i := 0; i < len(dataJSON.Lines); i++ {
+		if dataJSON.Lines[i].OutputType == "" {
+			dataJSON.Lines[i].OutputType = confData.OutputType
+		}
 		if dataJSON.Lines[i].HTTPLoc == "" {
 			dataJSON.Lines[i].HTTPLoc = confData.HTTPLoc
 		}
+		if dataJSON.Lines[i].SyslogType == "" {
+			dataJSON.Lines[i].SyslogType = confData.SyslogType
+		}
+		if dataJSON.Lines[i].SyslogLoc == "" {
+			dataJSON.Lines[i].SyslogLoc = confData.SyslogLoc
+		}
+
 	}
 
 	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
