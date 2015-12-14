@@ -129,6 +129,7 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 	req.Header.Add("X-Sumo-Category", params.SumoCategory)
 	req.Header.Add("X-Sumo-Host", params.SumoHost)
 	req.Header.Add("X-Sumo-Name", params.SumoName)
+	log.Debug("Request object to send to Sumo: ", req)
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Error("something went amiss on submitting to Sumo")
@@ -138,58 +139,81 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 	//log.Debug("Response from Sumo: ", resp)
 }
 
-// RunLogLine makes repeated calls to an endpoint given the configs of the log line
-func RunLogLine(params LogLineProperties) {
-	log.Info("Starting log runner for logline: ", params.PostBody)
+// InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
+func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []LogLineProperties, tickerStart time.Time) {
+	RunTableObj := *RunTable
+	for _, line := range Lines {
+		// Get the log line target start time
+		var targetTime time.Time
+		if line.StartTime == "" {
+			targetTime = tickerStart
+		} else {
+			re := regexp.MustCompile(`\d+`)
+			targetHourMinSec := re.FindAllString(line.StartTime, -1)
+			targetHour, _ := strconv.Atoi(targetHourMinSec[0])
+			targetMin, _ := strconv.Atoi(targetHourMinSec[1])
+			targetSec, _ := strconv.Atoi(targetHourMinSec[2])
+			loc, _ := time.LoadLocation("America/Los_Angeles")
+			targetTime = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), targetHour, targetMin, targetSec, 0, loc)
+		}
+		log.Debug("The target time is translated to: ", targetTime)
+		log.Debug("The start time of the ticker is: ", tickerStart)
+		diff := targetTime.Sub(tickerStart)
+		log.Debug(" The diff between them is: ", diff)
+		diffMod := int(diff.Seconds()) % line.IntervalSecs
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		switch {
+		case targetTime.Equal(tickerStart) || targetTime.After(tickerStart):
+			log.Debug("Target is equal to or after start, so appending to Run Table as is")
+			RunTableObj[targetTime] = append(RunTableObj[targetTime], line)
+		case targetTime.Before(tickerStart):
+			if diffMod == 0 {
+				log.Debug("TickerStart is a multiple of Target's interval, so setting to TickerStart")
+				RunTableObj[tickerStart] = append(RunTableObj[tickerStart], line)
+			} else {
+				log.Debug("Setting a start after ticker start to: ", tickerStart.Add(time.Duration(diffMod)*time.Second))
+				RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)] = append(RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)], line)
+			}
+		}
+
+	}
+}
+
+// RunLogLine makes runs an instance of a log line through the appropriate channel
+func RunLogLine(params LogLineProperties, sendTime time.Time) {
+	log.Info("Starting log runner for logline: ", params.PostBody)
 
 	client := &http.Client{}
 
-	// Hold until start time (or multiple thereof) if specified
-	if params.StartTime != "" {
-		re := regexp.MustCompile(`\d+`)
-		targetHourMinSec := re.FindAllString(params.StartTime, -1)
-		log.Debug("Parsed start time values: ", targetHourMinSec)
-		targetHour, _ := strconv.Atoi(targetHourMinSec[0])
-		targetMin, _ := strconv.Atoi(targetHourMinSec[1])
-		targetSec, _ := strconv.Atoi(targetHourMinSec[0])
-		targetSecs := targetHour*3600 + targetMin*60 + targetSec
-		log.Debug("Target secs is ", targetSecs)
+	// Randomize the post body if need be
+	var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
 
-		nowTime := time.Now()
-		nowSecs := nowTime.Hour()*3600 + nowTime.Minute()*60 + nowTime.Second()
-		log.Debug("Now in Go is ", nowTime, " and the second value is ", nowSecs, " and the diff is ", targetSecs-nowSecs)
+	go sendLogLineHTTP(client, stringBody, params)
 
-		switch {
-		case targetSecs == nowSecs:
-			break
-		case targetSecs > nowSecs:
-			log.Debug("Sleeping until start for Seconds: ", targetSecs-nowSecs)
-			time.Sleep(time.Second * time.Duration(targetSecs-nowSecs))
-		case targetSecs < nowSecs:
-			if !((nowSecs-targetSecs)%params.IntervalSecs == 0) {
-				log.Debug("Start passed so sleeping until multiple start for Seconds: ", (nowSecs-targetSecs)%params.IntervalSecs)
-				time.Sleep(time.Second * time.Duration((nowSecs-targetSecs)%params.IntervalSecs))
-			} else {
-				log.Debug("We're already at a multiple! Post already!")
-			}
-		}
-	}
+}
 
-	// Begin loop to post the value until we're done
-	for {
-		// Randomize the post body if need be
-		var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
+// DispatchLogs takes a slice of Log Lines and a time and fires
+func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Time) {
+	log.Debug("Starting Dispatch Logs")
+	RunTableObj := *RunTable
 
-		go sendLogLineHTTP(client, stringBody, params)
+	// get a rand object for later
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 
-		// Sleep until the next run
-		// Randomize the sleep by specifying the std dev and adding the desired mean
-		milliseconds := params.IntervalSecs * 1000
-		stdDevMilli := params.IntervalStdDev * 1000.0
+	lines := RunTableObj[ThisTime]
+	for _, line := range lines {
+		go RunLogLine(line, ThisTime)
+
+		// Insert into RunTable for the next run
+		// Randomize the Interval by specifying the std dev and adding the desired mean
+		milliseconds := line.IntervalSecs * 1000
+		stdDevMilli := line.IntervalStdDev * 1000.0
 		nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
-		time.Sleep(time.Duration(nextInterval) * time.Millisecond)
+		nextTime := ThisTime.Add(time.Duration(nextInterval) * time.Millisecond).Truncate(time.Second)
+		log.Debug("Next log run for \"", line.PostBody, "\" set for ", nextTime)
+		RunTableObj[nextTime] = append(RunTableObj[nextTime], line)
+
 	}
 
+	delete(RunTableObj, ThisTime)
 }
