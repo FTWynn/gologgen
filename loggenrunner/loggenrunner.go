@@ -131,11 +131,22 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 	req.Header.Add("X-Sumo-Name", params.SumoName)
 	log.Debug("Request object to send to Sumo: ", req)
 	resp, err := client.Do(req)
+	defer resp.Body.Close()
 	if err != nil {
-		log.Error("something went amiss on submitting to Sumo")
+		log.Error("Something went amiss on submitting to Sumo: ", err)
 		return
 	}
-	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Debug("Non 200 response, retrying")
+		for i := 0; i < 5; i++ {
+			log.Debug("Retry #", i+1)
+			resp2, err := client.Do(req)
+			if resp2.StatusCode == 200 && err == nil {
+				break
+			}
+			time.Sleep(time.Duration(10) * time.Second)
+		}
+	}
 	//log.Debug("Response from Sumo: ", resp)
 }
 
