@@ -141,6 +141,7 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 		for i := 0; i < 5; i++ {
 			log.Debug("Retry #", i+1)
 			resp2, err := client.Do(req)
+			defer resp.Body.Close()
 			if resp2.StatusCode == 200 && err == nil {
 				break
 			}
@@ -203,7 +204,7 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 
 }
 
-// DispatchLogs takes a slice of Log Lines and a time and fires
+// DispatchLogs takes a slice of Log Lines and a time and fires the ones listed, re-adding them to the Run Table where the next run should go
 func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Time) {
 	log.Debug("Starting Dispatch Logs")
 	RunTableObj := *RunTable

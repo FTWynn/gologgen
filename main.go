@@ -55,7 +55,7 @@ func main() {
 	log.Debug("Parse in data in memory: ", string(dataText))
 	log.Debug("Resulted parsed data: ", dataJSON)
 
-	// Set individual lines to global configs if need be
+	// Set individual log lines to global configs if need be
 	for i := 0; i < len(dataJSON.Lines); i++ {
 		if dataJSON.Lines[i].HTTPLoc == "" {
 			dataJSON.Lines[i].HTTPLoc = confData.HTTPLoc
@@ -63,8 +63,8 @@ func main() {
 	}
 
 	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
-	log.Debug(RunTable)
 
+	// Add in some delay before starting off the ticker because we're not sure how long it will take to initialize our lines into the RunTable
 	targetTickerTime := time.Now().Add(10 * time.Second).Truncate(time.Second)
 
 	loggenrunner.InitializeRunTable(&RunTable, dataJSON.Lines, targetTickerTime)

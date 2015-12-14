@@ -73,3 +73,4 @@ There are a number of things I'd like to get to, but I'm not good enough to know
 * Provide builds
 * Randomizer should check for valid syntax inside the group
 * Some way to link either log lines together (logouts should wait on logins, and logins shouldn't repeat without logouts)
+* More efficiently pass around the http and syslog clients
