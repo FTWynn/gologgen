@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"gologgen/loggenrunner"
 	"io/ioutil"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -55,18 +55,26 @@ func main() {
 	log.Debug("Parse in data in memory: ", string(dataText))
 	log.Debug("Resulted parsed data: ", dataJSON)
 
-	lines := dataJSON.Lines
-
-	// Loop through line objects and post to Sumo
-	for _, line := range lines {
-		// If no log line default, set to the global config
-		if line.HTTPLoc == "" {
-			line.HTTPLoc = confData.HTTPLoc
+	// Set individual lines to global configs if need be
+	for i := 0; i < len(dataJSON.Lines); i++ {
+		if dataJSON.Lines[i].HTTPLoc == "" {
+			dataJSON.Lines[i].HTTPLoc = confData.HTTPLoc
 		}
-		go loggenrunner.RunLogLine(line)
 	}
 
-	// This will kill all the goroutines when enter is typed in the console
-	var input string
-	fmt.Scanln(&input)
+	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
+	log.Debug(RunTable)
+
+	targetTickerTime := time.Now().Add(10 * time.Second).Truncate(time.Second)
+
+	loggenrunner.InitializeRunTable(&RunTable, dataJSON.Lines, targetTickerTime)
+	log.Debug("Finished RunTable:\n", RunTable)
+
+	// Set up a Ticker and call the dispatcher to create the log lines
+	tickerChannel := time.Tick(1 * time.Second)
+	for thisTime := range tickerChannel {
+		log.Debug("Tick for time: ", thisTime.Truncate(time.Second))
+		go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
+	}
+
 }

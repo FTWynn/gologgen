@@ -1,6 +1,6 @@
 # History and Thoughts
 
-### 12-13-2015
+### 2015-12-13
 
 Not everything seems appropriate for a README, and given that I'm learning this as I go, I figure I should write my thoughts and observations as they come to me in _something_ that might help other people walk through things.
 
@@ -36,3 +36,13 @@ Never mind that I also needed to extract timestamps in a general way, which eith
 In other words, the independent, let every log line be a goroutine and take care of itself approach didn't seem like it was going to work anymore. I struggled with coming up with other models for a bit, but then I stumbled on the idea of a ticker in the time library. It's just a channel that jots down the time every interval you specify. Perhaps, rather than leaving a spinning goroutine for each log line, I should let the main loop fire a dispatcher and figure out which log lines should be generated each interval. I can start with a short duration and see how it scales, or batch everything by the timeframe instead in case 1 second isn't long enough for bigger configs.
 
 At least... that'll be the first big refactor I undertake here.
+
+### 2015-12-13
+
+Boy... not really understanding pointers has come back to bite me today, but I think I've gotten the hang of it now.
+
+I had an inspiration at lunch for a way to only loop over the Log Lines necessary for a given Second (where I'm starting the Ticker Interval). Basically, store a two dimensional array, with time as an index and a list of LogLineProperty objects, and get that needed slice whenever the Ticker comes around. I can then delete that piece from there.
+
+This should take care of a few timing problems I ran into previously, and maybe even the dependency problem if I get clever with it.
+
+But yeah... passing pointers around is one I haven't really messed around with before.
