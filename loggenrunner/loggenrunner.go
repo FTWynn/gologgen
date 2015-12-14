@@ -224,6 +224,11 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 		go sendLogLineSyslog(&conn, stringBody, params)
 	}
 
+	// this is a terrible hack to make sure that there's time for the children to fire off before closing teh connections
+	// TODO: Fix this is in a big way
+	time.Sleep(time.Duration(5) * time.Second)
+	conn.Close()
+
 }
 
 // DispatchLogs takes a slice of Log Lines and a time and fires the ones listed, re-adding them to the Run Table where the next run should go
