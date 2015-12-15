@@ -2,9 +2,9 @@
   "lines" : [
     {
       "Text" : "$[time,stamp] Test Random Numbers: $[0,5] $[8,10]",
-      "IntervalSecs" : 2,
+      "IntervalSecs" : 4,
       "IntervalStdDev" : 0.5,
-      "TimestampFormat" : "2006-01-02 15:04:05",
+      "TimestampFormat" : "Jan 02 15:04:05",
       "SumoCategory" : "OverwrittenCategory1",
       "SumoName" : "OverwrittenName1",
       "SumoHost" : "OverwrittenHost1"
@@ -12,7 +12,7 @@
     {
       "Text" : "$[time,stamp] Test Random Category: $[Post,Thing,Stuff]",
       "IntervalSecs" : 4,
-      "IntervalStdDev" : 3,
+      "IntervalStdDev" : 1,
       "TimestampFormat" : "2006-01-02 15:04:05",
       "SumoCategory" : "OverwrittenCategory2",
       "SumoName" : "OverwrittenName2",
@@ -20,7 +20,7 @@
     },
     {
       "Text" : "Test No Randoms: Ta da!",
-      "IntervalSecs" : 1,
+      "IntervalSecs" : 6,
       "IntervalStdDev" : 0.2,
       "TimestampFormat" : "2006-01-02 15:04:05",
       "SumoCategory" : "OverwrittenCategory3",
@@ -32,7 +32,7 @@
       "IntervalSecs" : 5,
       "IntervalStdDev" : 0,
       "StartTime" : "12:03:01",
-      "TimestampFormat" : "2006-01-02 15:04:05",
+      "TimestampFormat" : "Jan 02 15:04:05",
       "SumoCategory" : "OverwrittenCategory3",
       "SumoName" : "OverwrittenName6",
       "SumoHost" : "OverwrittenHost6"

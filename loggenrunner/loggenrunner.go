@@ -211,7 +211,7 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 
 	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
 	if err != nil {
-		log.Error("Failed to create syslog connection, abandoning")
+		log.Error("Failed to create syslog connection, abandoning:", err)
 	}
 
 	// Randomize the post body if need be
@@ -226,8 +226,8 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 
 	// this is a terrible hack to make sure that there's time for the children to fire off before closing teh connections
 	// TODO: Fix this is in a big way
-	time.Sleep(time.Duration(5) * time.Second)
-	conn.Close()
+	//time.Sleep(time.Duration(5) * time.Second)
+	//conn.Close()
 
 }
 
@@ -248,6 +248,9 @@ func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Tim
 		milliseconds := line.IntervalSecs * 1000
 		stdDevMilli := line.IntervalStdDev * 1000.0
 		nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
+		if nextInterval < 1 {
+			nextInterval = 1
+		}
 		nextTime := ThisTime.Add(time.Duration(nextInterval) * time.Millisecond).Truncate(time.Second)
 		log.Debug("Next log run for \"", line.PostBody, "\" set for ", nextTime)
 		RunTableObj[nextTime] = append(RunTableObj[nextTime], line)
