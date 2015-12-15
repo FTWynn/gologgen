@@ -9,53 +9,43 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// ConfStore holds all the config data from the conf file
-type ConfStore struct {
-	HTTPLoc    string `json:"httpLoc"`
-	OutputType string `json:"OutputType"`
-	SyslogType string `json:"SyslogType"`
-	SyslogLoc  string `json:"SyslogLoc"`
+// GlobalConfStore holds all the config data from the conf file
+type GlobalConfStore struct {
+	HTTPLoc     string               `json:"httpLoc"`
+	OutputType  string               `json:"OutputType"`
+	SyslogType  string               `json:"SyslogType"`
+	SyslogLoc   string               `json:"SyslogLoc"`
+	DataFiles   []DataFileMetaData   `json:"DataFiles"`
+	ReplayFiles []ReplayFileMetaData `json:"ReplayFiles"`
 }
 
-func init() {
-	log.SetLevel(log.InfoLevel)
+// DataFileMetaData stores the configs around data files
+type DataFileMetaData struct {
+	Path string `json:"Path"`
 }
 
-func main() {
-	// Read in the config file
-	confText, err := ioutil.ReadFile("config/gologgen.conf")
-	if err != nil {
-		log.Error("something went amiss on conf file read")
-		return
-	}
-	log.Debug("Read in conf from file: ", string(confText))
+// ReplayFileMetaData stores all the info around a replay file
+type ReplayFileMetaData struct {
+	Path           string `json:"Path"`
+	TimestampRegex string `json:"TimestampRegex"`
+}
 
-	// Unmarshal the Global Config JSON into a struct
-	var confData ConfStore
-	err = json.Unmarshal(confText, &confData)
-	if err != nil {
-		log.Error("something went amiss on parsing the global config file")
-		return
-	}
-	log.Debug("Parsed conf results", confData)
+//
+func storeDataFileLogLines(confData GlobalConfStore) (dataJSON loggenrunner.LogGenDataFile) {
+	// Read in the data files
+	for i := 0; i < len(confData.DataFiles); i++ {
+		dataText, err := ioutil.ReadFile(confData.DataFiles[i].Path)
+		if err != nil {
+			log.Error("Something went amiss on data file read: ", err)
+		}
 
-	// Read in the data file
-	dataText, err := ioutil.ReadFile("config/gologgen.data")
-	if err != nil {
-		log.Error("something went amiss on data file read")
-		return
+		// convert the data to somethign we can work with
+		err = json.Unmarshal(dataText, &dataJSON)
+		if err != nil {
+			log.Error("something went amiss on parsing the data file: ", err)
+			return
+		}
 	}
-	log.Debug("Read in data from file: ", string(dataText))
-
-	// Convert the data into something we can work with
-	dataJSON := loggenrunner.LogGenDataFile{}
-	err = json.Unmarshal(dataText, &dataJSON)
-	if err != nil {
-		log.Error("something went amiss on parsing the data file: ", err)
-		return
-	}
-	log.Debug("Parse in data in memory: ", string(dataText))
-	log.Debug("Resulted parsed data: ", dataJSON)
 
 	// Set individual log lines to global configs if need be
 	for i := 0; i < len(dataJSON.Lines); i++ {
@@ -73,6 +63,33 @@ func main() {
 		}
 
 	}
+	return dataJSON
+}
+
+func init() {
+	log.SetLevel(log.InfoLevel)
+}
+
+func main() {
+	// Read in the config file
+	confText, err := ioutil.ReadFile("config/gologgen.conf")
+	if err != nil {
+		log.Error("something went amiss on conf file read")
+		return
+	}
+	log.Debug("Read in conf from file: ", string(confText))
+
+	// Unmarshal the Global Config JSON into a struct
+	var confData GlobalConfStore
+	err = json.Unmarshal(confText, &confData)
+	if err != nil {
+		log.Error("something went amiss on parsing the global config file")
+		return
+	}
+	log.Debug("Parsed conf results", confData)
+
+	// Create an object to stare DataFile LogLines
+	dataJSON := storeDataFileLogLines(confData)
 
 	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
 
