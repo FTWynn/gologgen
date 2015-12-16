@@ -37,6 +37,7 @@ type ReplayFileMetaData struct {
 
 // storeDataFileLogLines takes the conf data, gets the associated files, and puts them in a big list of LogLine Objects
 func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.LogLineProperties) {
+
 	// Return if no data files
 	if len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0 {
 		log.Error("No data files or replay files were found in the global config file.")
@@ -82,9 +83,9 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 		for scanner.Scan() {
 			log.Debug("Scanning file: ", file)
 			line := scanner.Text()
-			log.Debug("Current reply line: ", line)
+			log.Debug("Current replay line: ", line)
 			match := timeRegex.FindStringSubmatch(line)
-			log.Debug("Current reply line matches: ", match)
+			log.Debug("Current replay line matches: ", match)
 
 			log.Debug("timeRegex.SubexpName(): ", timeRegex.SubexpNames())
 			log.Debug("match: ", match[1])
@@ -105,7 +106,6 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 			logLine := loggenrunner.LogLineProperties{PostBody: augmentedLine, IntervalSecs: replayFile.RepeatInterval, IntervalStdDev: 0, StartTime: startTime, TimestampFormat: replayFile.TimestampFormat}
 			log.Debug("New LogLine Object: ", logLine)
 
-			// TODO append new object to the logLines slice
 			logLines = append(logLines, logLine)
 
 		}
@@ -127,6 +127,10 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 		}
 
 	}
+
+	log.WithFields(log.Fields{
+		"length": len(logLines),
+	}).Info("Total Log Lines buildup")
 	return
 }
 
@@ -154,6 +158,7 @@ func main() {
 
 	// Create an object to stare DataFile LogLines
 	logLines := storeDataFileLogLines(confData)
+	log.Info("Processed Log Lines:", len(logLines))
 
 	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
 
@@ -161,6 +166,7 @@ func main() {
 	targetTickerTime := time.Now().Add(10 * time.Second).Truncate(time.Second)
 
 	loggenrunner.InitializeRunTable(&RunTable, logLines, targetTickerTime)
+	log.Info("======================================")
 	log.Debug("Finished RunTable:\n", RunTable)
 
 	// Set up a Ticker and call the dispatcher to create the log lines
@@ -168,6 +174,8 @@ func main() {
 	for thisTime := range tickerChannel {
 		log.Debug("Tick for time: ", thisTime.Truncate(time.Second))
 		go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
+		// Rework for old data
+		//go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second).Add(time.Duration(-1)*time.Second))
 	}
 
 }

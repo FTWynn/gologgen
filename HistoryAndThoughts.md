@@ -46,3 +46,11 @@ I had an inspiration at lunch for a way to only loop over the Log Lines necessar
 This should take care of a few timing problems I ran into previously, and maybe even the dependency problem if I get clever with it.
 
 But yeah... passing pointers around is one I haven't really messed around with before.
+
+### 2015-12-15
+
+While I've continued to make progress on features, like writing to Syslog and importing from a replay file, I've run into a bug I can't track down.
+
+It seems if I try to fire too many events in one second, they disappear. I can't really explain it. I tried some more printf logging, but it just isn't enough to give me a clue as to why the lines would disappear. Maybe some sort of lag? Maybe the delete line gets a little ambitious and kills lines that still need running? Maybe there's just too much to do in one second?
+
+A look around for debuggers shows positively dreadful results in the go arena. Nothing seems to elegantly handle concurrency (which I suppose makes sense in a "pause the world" way). In either case, this one is particularly frustrating.

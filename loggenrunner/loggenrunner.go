@@ -3,6 +3,7 @@ package loggenrunner
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"math/rand"
 	"net"
 	"net/http"
@@ -157,16 +158,23 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 }
 
 //sendLogLineSyslog sends the log on tcp/udp, WITHOUT retrying
-func sendLogLineSyslog(conn *net.Conn, stringBody []byte, params LogLineProperties) {
+func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
+	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
+	if err != nil {
+		log.Error("Failed to create syslog connection, abandoning:", err)
+	}
+	defer conn.Close()
 	// Post to Syslog
 	log.Info("Sending log to Syslog: ", string(stringBody))
-	fmt.Fprintf(*conn, string(stringBody))
+	fmt.Fprintf(conn, string(stringBody))
 }
 
 // InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
 func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []LogLineProperties, tickerStart time.Time) {
 	RunTableObj := *RunTable
 	for _, line := range Lines {
+		log.Debug("========== New Line ==========")
+		log.Debug("The literal time string: ", line.StartTime)
 		// Get the log line target start time
 		var targetTime time.Time
 		if line.StartTime == "" {
@@ -178,13 +186,13 @@ func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []Log
 			targetMin, _ := strconv.Atoi(targetHourMinSec[1])
 			targetSec, _ := strconv.Atoi(targetHourMinSec[2])
 			loc, _ := time.LoadLocation("America/Los_Angeles")
-			targetTime = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), targetHour, targetMin, targetSec, 0, loc)
+			targetTime = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), targetHour, targetMin, targetSec, 0, loc).Truncate(time.Second)
 		}
 		log.Debug("The target time is translated to: ", targetTime)
 		log.Debug("The start time of the ticker is: ", tickerStart)
 		diff := targetTime.Sub(tickerStart)
 		log.Debug(" The diff between them is: ", diff)
-		diffMod := int(diff.Seconds()) % line.IntervalSecs
+		diffMod := int(math.Abs(float64(int(diff.Seconds()) % line.IntervalSecs)))
 
 		switch {
 		case targetTime.Equal(tickerStart) || targetTime.After(tickerStart):
@@ -201,18 +209,20 @@ func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []Log
 		}
 
 	}
+	log.WithFields(log.Fields{
+		"length": len(RunTableObj),
+	}).Info("Total RunTable buildup")
+
+	/*for k, v := range RunTableObj {
+		fmt.Println("Key: ", k, "\tValue: ", v)
+	}*/
 }
 
 // RunLogLine makes runs an instance of a log line through the appropriate channel
 func RunLogLine(params LogLineProperties, sendTime time.Time) {
-	log.Info("Starting log runner for logline: ", params.PostBody)
+	log.Info("Starting log runner for time: ", sendTime, " with logline: ", params.PostBody)
 
 	client := &http.Client{}
-
-	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
-	if err != nil {
-		log.Error("Failed to create syslog connection, abandoning:", err)
-	}
 
 	// Randomize the post body if need be
 	var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
@@ -221,20 +231,21 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 	case "http":
 		go sendLogLineHTTP(client, stringBody, params)
 	case "syslog":
-		go sendLogLineSyslog(&conn, stringBody, params)
+		go sendLogLineSyslog(stringBody, params)
 	}
-
-	// this is a terrible hack to make sure that there's time for the children to fire off before closing teh connections
-	// TODO: Fix this is in a big way
-	//time.Sleep(time.Duration(5) * time.Second)
-	//conn.Close()
 
 }
 
 // DispatchLogs takes a slice of Log Lines and a time and fires the ones listed, re-adding them to the Run Table where the next run should go
 func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Time) {
-	log.Debug("Starting Dispatch Logs")
+	/*log := log.WithFields(log.Fields{
+		"func": "DispatchLogs",
+	})*/
+
 	RunTableObj := *RunTable
+	log.WithFields(log.Fields{
+		"length": len(RunTableObj[ThisTime]),
+	}).Info("Starting Dispatch Logs for time: ", ThisTime)
 
 	// get a rand object for later
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -248,14 +259,16 @@ func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Tim
 		milliseconds := line.IntervalSecs * 1000
 		stdDevMilli := line.IntervalStdDev * 1000.0
 		nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
-		if nextInterval < 1 {
-			nextInterval = 1
+		if nextInterval < 1000 {
+			nextInterval = 1000
 		}
 		nextTime := ThisTime.Add(time.Duration(nextInterval) * time.Millisecond).Truncate(time.Second)
-		log.Debug("Next log run for \"", line.PostBody, "\" set for ", nextTime)
+		log.Info("SCHEDULED - Next log run for \"", line.PostBody, "\" set for ", nextTime)
 		RunTableObj[nextTime] = append(RunTableObj[nextTime], line)
 
 	}
 
+	//time.Sleep(time.Duration(3) * time.Second)
+	//log.Info("DELETING - list for time [", ThisTime, "] (should be empty): ", RunTableObj[ThisTime])
 	delete(RunTableObj, ThisTime)
 }
