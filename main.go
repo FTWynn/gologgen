@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"gologgen/loggenrunner"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"regexp"
 	"time"
@@ -20,6 +21,7 @@ type GlobalConfStore struct {
 	SyslogLoc   string               `json:"SyslogLoc"`
 	DataFiles   []DataFileMetaData   `json:"DataFiles"`
 	ReplayFiles []ReplayFileMetaData `json:"ReplayFiles"`
+	HTTPClient  http.Client
 }
 
 // DataFileMetaData stores the configs around data files
@@ -37,6 +39,7 @@ type ReplayFileMetaData struct {
 
 // storeDataFileLogLines takes the conf data, gets the associated files, and puts them in a big list of LogLine Objects
 func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.LogLineProperties) {
+	log.Info("Entering storeDataFileLogLines", "confData", confData, "logLines length", len(logLines))
 
 	// Return if no data files
 	if len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0 {
@@ -113,6 +116,8 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 
 	// Set individual log lines to global configs / defaults if need be
 	for i := 0; i < len(logLines); i++ {
+		logLines[i].HTTPClient = &confData.HTTPClient
+
 		if logLines[i].OutputType == "" {
 			logLines[i].OutputType = confData.OutputType
 		}
@@ -137,7 +142,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 
 	}
 
-	log.Info("Total Log Lines buildup", "length", len(logLines))
+	log.Info("Finished storing normalized log lines", "count", len(logLines))
 	return
 }
 
@@ -147,13 +152,15 @@ func init() {
 }
 
 func main() {
+	log.Info("Starting main program")
+
 	// Read in the config file
 	confText, err := ioutil.ReadFile("config/gologgen.conf")
 	if err != nil {
-		log.Error("something went amiss on conf file read")
+		log.Error("Something went amiss on conf file read", "error_msg", err)
 		return
 	}
-	log.Debug("Read in conf from file: ", "file", string(confText))
+	log.Debug("Read in global config from file", "file", string(confText))
 
 	// Unmarshal the Global Config JSON into a struct
 	var confData GlobalConfStore
@@ -162,25 +169,25 @@ func main() {
 		log.Error("something went amiss on parsing the global config file: ", "error_msg", err)
 		return
 	}
-	log.Debug("Parsed conf results", "results", confData)
+	log.Info("Parsed global config results", "results", confData)
 
 	// Create an object to stare DataFile LogLines
 	logLines := storeDataFileLogLines(confData)
-	log.Info("Processed Log Lines:", "len(logLines)", len(logLines))
 
 	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
 
 	// Add in some delay before starting off the ticker because we're not sure how long it will take to initialize our lines into the RunTable
-	targetTickerTime := time.Now().Add(10 * time.Second).Truncate(time.Second)
+	targetTickerTime := time.Now().Add(5 * time.Second).Truncate(time.Second)
 
 	loggenrunner.InitializeRunTable(&RunTable, logLines, targetTickerTime)
-	log.Info("======================================")
 	log.Debug("Finished RunTable:\n", "RunTable", RunTable)
+
+	log.Info("==================== Starting the main event loop ==================")
 
 	// Set up a Ticker and call the dispatcher to create the log lines
 	tickerChannel := time.Tick(1 * time.Second)
 	for thisTime := range tickerChannel {
-		log.Debug("Tick for time: ", "thisTime", thisTime.Truncate(time.Second))
+		log.Debug("Tick for time", "thisTime", thisTime.Truncate(time.Second))
 		go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
 		// Rework for old data
 		//go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second).Add(time.Duration(-1)*time.Second))

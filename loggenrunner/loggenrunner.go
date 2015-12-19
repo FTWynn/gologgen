@@ -34,6 +34,7 @@ type LogLineProperties struct {
 	SumoHost        string  `json:"SumoHost"`
 	SumoName        string  `json:"SumoName"`
 	StartTime       string  `json:"StartTime"`
+	HTTPClient      *http.Client
 }
 
 // randomizeString takes a string, looks for the random tokens (int, string, and timestamp), and replaces them
@@ -211,16 +212,14 @@ func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []Log
 
 // RunLogLine makes runs an instance of a log line through the appropriate channel
 func RunLogLine(params LogLineProperties, sendTime time.Time) {
-	log.Info("Starting log runner", "time", sendTime, "logline", params.PostBody)
-
-	client := &http.Client{}
+	log.Info("Starting Individual Log Runner", "time", sendTime, "logline", params.PostBody)
 
 	// Randomize the post body if need be
 	var stringBody = []byte(randomizeString(params.PostBody, params.TimestampFormat))
 
 	switch params.OutputType {
 	case "http":
-		go sendLogLineHTTP(client, stringBody, params)
+		go sendLogLineHTTP(params.HTTPClient, stringBody, params)
 	case "syslog":
 		go sendLogLineSyslog(stringBody, params)
 	}
@@ -254,7 +253,5 @@ func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Tim
 
 	}
 
-	//time.Sleep(time.Duration(3) * time.Second)
-	//log.Info("DELETING - list for time [", ThisTime, "] (should be empty): ", RunTableObj[ThisTime])
 	delete(RunTableObj, ThisTime)
 }
