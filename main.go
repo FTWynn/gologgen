@@ -45,7 +45,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 
 	dataJSON := loggenrunner.LogGenDataFile{}
 
-	// Read in the data files
+	// First, read in any data files
 	for i := 0; i < len(confData.DataFiles); i++ {
 		dataText, err := ioutil.ReadFile(confData.DataFiles[i].Path)
 		if err != nil {
@@ -65,7 +65,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 		}
 	}
 
-	// Read in the replay files
+	// Second, read in the replay files
 	for i := 0; i < len(confData.ReplayFiles); i++ {
 		replayFile := confData.ReplayFiles[i]
 
@@ -111,7 +111,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 		}
 	}
 
-	// Set individual log lines to global configs if need be
+	// Set individual log lines to global configs / defaults if need be
 	for i := 0; i < len(logLines); i++ {
 		if logLines[i].OutputType == "" {
 			logLines[i].OutputType = confData.OutputType
@@ -124,6 +124,15 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 		}
 		if logLines[i].SyslogLoc == "" {
 			logLines[i].SyslogLoc = confData.SyslogLoc
+		}
+		if logLines[i].SumoName == "" {
+			logLines[i].SumoName = "GeneratedFilename.txt"
+		}
+		if logLines[i].SumoCategory == "" {
+			logLines[i].SumoCategory = "Generated_Category"
+		}
+		if logLines[i].SumoHost == "" {
+			logLines[i].SumoHost = "GeneratedHost"
 		}
 
 	}

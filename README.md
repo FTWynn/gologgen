@@ -66,10 +66,10 @@ This file contains individual loglines to be generated, along with each line's p
 
 There are a number of things I'd like to get to, but I'm not good enough to know how feasible any of them are yet. In rough order of what I'll attempt next, here's what's currently on the list.
 
-* Add support for replays from simple captures
-* Make parameters optional in the JSONData
 * Validate that the conf and data files are correctly formatted
 * Provide builds
+* Add a "fast forward" capability to populate the logs as fast as possible, rather than in live time
 * Randomizer should check for valid syntax inside the group
 * Some way to link either log lines together (logouts should wait on logins, and logins shouldn't repeat without logouts)
-* More efficiently pass around the http and syslog clients
+* More efficiently pass around the syslog client
+* ... tests?
