@@ -1,70 +1,27 @@
 # gologgen
 
-gologgen is a generic log generator written in go. I mostly wrote it because I wanted to learn golang, and there were a few needs in my job for a good fake log generator. As such, all feedback is welcome, because anything I learn now will hopefully suck less in the future.
+gologgen is a generic log generator written in go. I'm writing it because I want to learn golang, and there was a needs for a good fake log generator at my job. As such, please let me know if I've done anything poorly, because anything I learn now will hopefully help me suck less in the future.
+
+I'm also leaving the entire commit history here (at least for now), so that others can point and laugh at my mistakes... and maybe learn something.
 
 ## Setup
 
-There are two files to be used when setting up gologgen. First, a gologgen.conf, and second a gologgen.data.
+The first needed file is gologgen.conf, which stores global variables. A working example is in the config directory. Second, you will need either a gologgen.data file, or a replay file. The format for each of these is listed in the example gologgen.conf file.
 
-### gologgen.conf
+Most of it's pretty self explanatory. The only exception being the timestamp format. Go does this odd thing when specifying timestamp formats, where you can express the date string however you like, but it **must** correspond to the date:
 
-This stores global configs, and potentially defaults. All in JSON.
+    Mon Jan 2 15:04:05 MST 2006
 
-    {
-      "httpLoc" : "https://collectors.sumologic.com/receiver/v1/http/ZaVnC4dhaV0o8ZcEo-edSG28OScCSzOzHtojKTRId_fimMMYzbIBk1f7ciR2FE6JHXKONkhlHohT30cD1ZeCrDvvQAhMbgjjjRxEQBcn-M3sh9PRMVtt6A==",
-      "OutputType" : "http"
-    }
+... or as a numbers inclined person might see it...
 
+    01/02 03:04:05PM '06 -0700
 
-### gologgen.data
+I may clean this up in the future, but for now
 
-This file contains individual loglines to be generated, along with each line's parameters. Timestamps, random numbers, and random selections of words can be specified within the strings.
-
-    {
-      "lines" : [
-        {
-          "Text" : "$[time,stamp] Test Random Numbers: $[0,5] $[8,10]",
-          "IntervalSecs" : 2,
-          "IntervalStdDev" : 0.5,
-          "TimestampFormat" : "2006-01-02 15:04:05",
-          "SumoCategory" : "OverwrittenCategory1",
-          "SumoName" : "OverwrittenName1",
-          "SumoHost" : "OverwrittenHost1"
-        },
-        {
-          "Text" : "$[time,stamp] Test Random Category: $[Post,Thing,Stuff]",
-          "IntervalSecs" : 4,
-          "IntervalStdDev" : 3,
-          "TimestampFormat" : "2006-01-02 15:04:05",
-          "SumoCategory" : "OverwrittenCategory2",
-          "SumoName" : "OverwrittenName2",
-          "SumoHost" : "OverwrittenHost2"
-        },
-        {
-          "Text" : "Test No Randoms: Ta da!",
-          "IntervalSecs" : 1,
-          "IntervalStdDev" : 0.2,
-          "TimestampFormat" : "2006-01-02 15:04:05",
-          "SumoCategory" : "OverwrittenCategory3",
-          "SumoName" : "OverwrittenName4",
-          "SumoHost" : "OverwrittenHost5"
-        },
-        {
-          "Text" : "$[time,stamp] Rock Solid Repeater",
-          "IntervalSecs" : 5,
-          "IntervalStdDev" : 0,
-          "StartTime" : "12:03:01",
-          "TimestampFormat" : "2006-01-02 15:04:05",
-          "SumoCategory" : "OverwrittenCategory3",
-          "SumoName" : "OverwrittenName6",
-          "SumoHost" : "OverwrittenHost6"
-        }
-        ]
-    }
 
 ## Roadmap
 
-There are a number of things I'd like to get to, but I'm not good enough to know how feasible any of them are yet. In rough order of what I'll attempt next, here's what's currently on the list.
+There are a number of things I'd like to get to, but I'm not quite good enough to know how feasible any of them are yet. In rough order of what I'll attempt next, here's what's currently on the list.
 
 * Validate that the conf and data files are correctly formatted
 * Provide builds
