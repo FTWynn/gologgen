@@ -54,3 +54,5 @@ While I've continued to make progress on features, like writing to Syslog and im
 It seems if I try to fire too many events in one second, they disappear. I can't really explain it. I tried some more printf logging, but it just isn't enough to give me a clue as to why the lines would disappear. Maybe some sort of lag? Maybe the delete line gets a little ambitious and kills lines that still need running? Maybe there's just too much to do in one second?
 
 A look around for debuggers shows positively dreadful results in the go arena. Nothing seems to elegantly handle concurrency (which I suppose makes sense in a "pause the world" way). In either case, this one is particularly frustrating.
+
+... ugh, finally. There was a negative mod that caused the timestamps to be shifted backwards from teh target time instead of forwards. Bleh.
