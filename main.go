@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "gopkg.in/inconshreveable/log15.v2"
 )
 
 // GlobalConfStore holds all the config data from the conf file
@@ -137,14 +137,13 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 
 	}
 
-	log.WithFields(log.Fields{
-		"length": len(logLines),
-	}).Info("Total Log Lines buildup")
+	log.Info("Total Log Lines buildup", "length", len(logLines))
 	return
 }
 
 func init() {
-	log.SetLevel(log.InfoLevel)
+	//log.SetLevel(log.InfoLevel)
+	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StdoutHandler))
 }
 
 func main() {
@@ -154,20 +153,20 @@ func main() {
 		log.Error("something went amiss on conf file read")
 		return
 	}
-	log.Debug("Read in conf from file: ", string(confText))
+	log.Debug("Read in conf from file: ", "file", string(confText))
 
 	// Unmarshal the Global Config JSON into a struct
 	var confData GlobalConfStore
 	err = json.Unmarshal(confText, &confData)
 	if err != nil {
-		log.Error("something went amiss on parsing the global config file")
+		log.Error("something went amiss on parsing the global config file: ", "error_msg", err)
 		return
 	}
-	log.Debug("Parsed conf results", confData)
+	log.Debug("Parsed conf results", "results", confData)
 
 	// Create an object to stare DataFile LogLines
 	logLines := storeDataFileLogLines(confData)
-	log.Info("Processed Log Lines:", len(logLines))
+	log.Info("Processed Log Lines:", "len(logLines)", len(logLines))
 
 	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
 
@@ -176,12 +175,12 @@ func main() {
 
 	loggenrunner.InitializeRunTable(&RunTable, logLines, targetTickerTime)
 	log.Info("======================================")
-	log.Debug("Finished RunTable:\n", RunTable)
+	log.Debug("Finished RunTable:\n", "RunTable", RunTable)
 
 	// Set up a Ticker and call the dispatcher to create the log lines
 	tickerChannel := time.Tick(1 * time.Second)
 	for thisTime := range tickerChannel {
-		log.Debug("Tick for time: ", thisTime.Truncate(time.Second))
+		log.Debug("Tick for time: ", "thisTime", thisTime.Truncate(time.Second))
 		go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
 		// Rework for old data
 		//go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second).Add(time.Duration(-1)*time.Second))

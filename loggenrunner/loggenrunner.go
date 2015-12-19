@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "gopkg.in/inconshreveable/log15.v2"
 )
 
 // LogGenDataFile represents a data file
@@ -41,19 +41,19 @@ func randomizeString(text string, timeformat string) string {
 	// Bail if we can't get any randomizers
 	goodstring, err := regexp.MatchString(`\$\[[^\]]+\]`, text)
 	if err != nil {
-		log.Error("Something broke on parsing the text string with a regular expression")
+		log.Error("Something broke on parsing the text string with a regular expression", "error_msg", err)
 	}
 
-	//Return original string if no randomizers
+	//Return original string if 0 randomizers
 	if !goodstring {
-		log.Debug("Found no random tokens: ", text)
+		log.Debug("Found no random tokens: ", "text", text)
 		return text
 	}
 
 	// Find all randomizing tokens
 	re := regexp.MustCompile(`\$\[[^\]]+\]`)
 	randos := re.FindAllString(text, -1)
-	log.Debug("Random tokens: ", randos)
+	log.Debug("A found random tokens", "randomTokens", randos, "num", len(randos))
 
 	// Create a list of new strings to be inserted where the tokens were
 	var newstrings []string
@@ -63,21 +63,18 @@ func randomizeString(text string, timeformat string) string {
 	for _, rando := range randos {
 		// Take off the leading and trailing formatting
 		tempstring := replacer.Replace(rando)
-		log.Debug("tempstring: ", tempstring)
+		log.Debug("Removing the formatting from the items: ", "tempstring", tempstring)
 
-		// Split the rnadomizer into individual items
+		// Split the randomizer into individual items
 		tempstrings := strings.Split(tempstring, ",")
-		log.Debug("tempstrings: ", tempstrings)
+		log.Debug("Splitting the random tokens up: ", "tempstrings", tempstrings, "count", len(tempstrings))
 
 		// Numeric ranges will only have two items for an upper and lower bound, timestamps have "time" and "stamp", all the rest are string groups
 		var randType string
 		num0, err := strconv.Atoi(string(tempstrings[0]))
 		num1, err2 := strconv.Atoi(string(tempstrings[1]))
-		log.Debug("num0 parsed: ", num0, err)
-		log.Debug("num1 parsed: ", num1, err2)
-		log.Debug("Length of tempstrings: ", len(tempstrings))
-		log.Debug("Numbers?: ", len(tempstrings) == 2 && err == nil && err2 == nil)
-		log.Debug("Timestamp?: ", tempstrings[0] == "time" && tempstrings[1] == "stamp")
+		log.Debug("Parsing entry 0 as a number: ", "num", num0, "error", err)
+		log.Debug("Parsing entry 1 as a number: ", "num", num1, "error", err2)
 
 		switch {
 		case len(tempstrings) == 2 && err == nil && err2 == nil:
@@ -88,25 +85,24 @@ func randomizeString(text string, timeformat string) string {
 			randType = "Category"
 		}
 
+		log.Debug("What type of token is this?", "type", randType)
+
 		switch randType {
 		case "Category":
-			log.Debug("Treating as Category")
 			newstrings = append(newstrings, tempstrings[rand.Intn(len(tempstrings))])
 		case "Number":
-			log.Debug("Treating as Number")
-
 			// Get a random number in the range
 			diff := num1 - num0
-			log.Debug("diff parsed: ", diff)
+			log.Debug("Difference from second and first numbers", "diff", diff)
 			tempnum := rand.Intn(diff)
-			log.Debug("random number: ", tempnum)
-			log.Debug("random number as string: ", strconv.Itoa(tempnum+num0))
+			log.Debug("Random number from zero adjusted spread", "rand", tempnum)
+			log.Debug("Random number adjusted to range and string converted", "rand", strconv.Itoa(tempnum+num0))
 			newstrings = append(newstrings, strconv.Itoa(tempnum+num0))
 		case "Timestamp":
 			t := time.Now()
-			log.Debug("Current time: ", t)
+			log.Debug("Current time", "now", t)
 			timeformatted := t.Format(timeformat)
-			log.Debug("Formatted time: ", timeformatted)
+			log.Debug("Formatted time", "now", timeformatted)
 
 			newstrings = append(newstrings, timeformatted)
 		}
@@ -122,7 +118,7 @@ func randomizeString(text string, timeformat string) string {
 		}
 	}
 
-	log.Info("Randomization complete. New string: ", strings.Join(newLogLine, ""))
+	log.Info("Randomization complete", "newString", strings.Join(newLogLine, ""))
 
 	return strings.Join(newLogLine, "")
 }
@@ -130,22 +126,22 @@ func randomizeString(text string, timeformat string) string {
 // sendLogLineHTTP sends the log line to the http endpoint, retrying if need be
 func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLineProperties) {
 	// Post to Sumo
-	log.Info("Sending log to Sumo: ", string(stringBody))
+	log.Info("Sending log to Sumo over HTTP", "line", string(stringBody))
 	req, err := http.NewRequest("POST", params.HTTPLoc, bytes.NewBuffer(stringBody))
 	req.Header.Add("X-Sumo-Category", params.SumoCategory)
 	req.Header.Add("X-Sumo-Host", params.SumoHost)
 	req.Header.Add("X-Sumo-Name", params.SumoName)
-	log.Debug("Request object to send to Sumo: ", req)
+	log.Debug("Request object to send to Sumo", "request", req)
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Error("Something went amiss on submitting to Sumo: ", err)
+		log.Error("Something went amiss on submitting to Sumo", "error", err)
 		return
 	}
 	if resp.StatusCode != 200 {
 		log.Debug("Non 200 response, retrying")
 		for i := 0; i < 5; i++ {
-			log.Debug("Retry #", i+1)
+			log.Debug("Retrying", "attemptNumber", i+1)
 			resp2, err := client.Do(req)
 			defer resp.Body.Close()
 			if resp2.StatusCode == 200 && err == nil {
@@ -161,11 +157,11 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
 	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
 	if err != nil {
-		log.Error("Failed to create syslog connection, abandoning:", err)
+		log.Error("Failed to create syslog connection, abandoning", "error", err)
 	}
 	defer conn.Close()
 	// Post to Syslog
-	log.Info("Sending log to Syslog: ", string(stringBody))
+	log.Info("Sending log to Syslog", "line", string(stringBody))
 	fmt.Fprintf(conn, string(stringBody))
 }
 
@@ -174,7 +170,7 @@ func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []Log
 	RunTableObj := *RunTable
 	for _, line := range Lines {
 		log.Debug("========== New Line ==========")
-		log.Debug("The literal time string: ", line.StartTime)
+		log.Debug("The literal time string", "time", line.StartTime)
 		// Get the log line target start time
 		var targetTime time.Time
 		if line.StartTime == "" {
@@ -188,10 +184,10 @@ func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []Log
 			loc, _ := time.LoadLocation("America/Los_Angeles")
 			targetTime = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), targetHour, targetMin, targetSec, 0, loc).Truncate(time.Second)
 		}
-		log.Debug("The target time is translated to: ", targetTime)
-		log.Debug("The start time of the ticker is: ", tickerStart)
+		log.Debug("The target time is translated to", "targetTime", targetTime)
+		log.Debug("The start time of the ticker is", "tickerStart", tickerStart)
 		diff := targetTime.Sub(tickerStart)
-		log.Debug(" The diff between them is: ", diff)
+		log.Debug("The diff between target and tickerStart is", "diff", diff)
 		diffMod := int(math.Abs(float64(int(diff.Seconds()) % line.IntervalSecs)))
 
 		switch {
@@ -203,24 +199,19 @@ func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []Log
 				log.Debug("TickerStart is a multiple of Target's interval, so setting to TickerStart")
 				RunTableObj[tickerStart] = append(RunTableObj[tickerStart], line)
 			} else {
-				log.Debug("Setting a start after ticker start to: ", tickerStart.Add(time.Duration(diffMod)*time.Second))
+				log.Debug("Setting a start after ticker start", "startTime", tickerStart.Add(time.Duration(diffMod)*time.Second))
 				RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)] = append(RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)], line)
 			}
 		}
 
 	}
-	log.WithFields(log.Fields{
-		"length": len(RunTableObj),
-	}).Info("Total RunTable buildup")
+	log.Info("Total RunTable buildup", "length", len(RunTableObj))
 
-	/*for k, v := range RunTableObj {
-		fmt.Println("Key: ", k, "\tValue: ", v)
-	}*/
 }
 
 // RunLogLine makes runs an instance of a log line through the appropriate channel
 func RunLogLine(params LogLineProperties, sendTime time.Time) {
-	log.Info("Starting log runner for time: ", sendTime, " with logline: ", params.PostBody)
+	log.Info("Starting log runner", "time", sendTime, "logline", params.PostBody)
 
 	client := &http.Client{}
 
@@ -238,14 +229,9 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 
 // DispatchLogs takes a slice of Log Lines and a time and fires the ones listed, re-adding them to the Run Table where the next run should go
 func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Time) {
-	/*log := log.WithFields(log.Fields{
-		"func": "DispatchLogs",
-	})*/
 
 	RunTableObj := *RunTable
-	log.WithFields(log.Fields{
-		"length": len(RunTableObj[ThisTime]),
-	}).Info("Starting Dispatch Logs for time: ", ThisTime)
+	log.Info("Starting Dispatch Logs", "time", ThisTime, "length", len(RunTableObj[ThisTime]))
 
 	// get a rand object for later
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -263,7 +249,7 @@ func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Tim
 			nextInterval = 1000
 		}
 		nextTime := ThisTime.Add(time.Duration(nextInterval) * time.Millisecond).Truncate(time.Second)
-		log.Info("SCHEDULED - Next log run for \"", line.PostBody, "\" set for ", nextTime)
+		log.Info("SCHEDULED - Next log run", "line", line.PostBody, "nextTime", nextTime)
 		RunTableObj[nextTime] = append(RunTableObj[nextTime], line)
 
 	}
