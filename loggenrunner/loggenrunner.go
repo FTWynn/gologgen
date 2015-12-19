@@ -3,7 +3,6 @@ package loggenrunner
 import (
 	"bytes"
 	"fmt"
-	"math"
 	"math/rand"
 	"net"
 	"net/http"
@@ -166,50 +165,6 @@ func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
 	fmt.Fprintf(conn, string(stringBody))
 }
 
-// InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
-func InitializeRunTable(RunTable *map[time.Time][]LogLineProperties, Lines []LogLineProperties, tickerStart time.Time) {
-	RunTableObj := *RunTable
-	for _, line := range Lines {
-		log.Debug("========== New Line ==========")
-		log.Debug("The literal time string", "time", line.StartTime)
-		// Get the log line target start time
-		var targetTime time.Time
-		if line.StartTime == "" {
-			targetTime = tickerStart
-		} else {
-			re := regexp.MustCompile(`\d+`)
-			targetHourMinSec := re.FindAllString(line.StartTime, -1)
-			targetHour, _ := strconv.Atoi(targetHourMinSec[0])
-			targetMin, _ := strconv.Atoi(targetHourMinSec[1])
-			targetSec, _ := strconv.Atoi(targetHourMinSec[2])
-			loc, _ := time.LoadLocation("America/Los_Angeles")
-			targetTime = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), targetHour, targetMin, targetSec, 0, loc).Truncate(time.Second)
-		}
-		log.Debug("The target time is translated to", "targetTime", targetTime)
-		log.Debug("The start time of the ticker is", "tickerStart", tickerStart)
-		diff := targetTime.Sub(tickerStart)
-		log.Debug("The diff between target and tickerStart is", "diff", diff)
-		diffMod := int(math.Abs(float64(int(diff.Seconds()) % line.IntervalSecs)))
-
-		switch {
-		case targetTime.Equal(tickerStart) || targetTime.After(tickerStart):
-			log.Debug("Target is equal to or after start, so appending to Run Table as is")
-			RunTableObj[targetTime] = append(RunTableObj[targetTime], line)
-		case targetTime.Before(tickerStart):
-			if diffMod == 0 {
-				log.Debug("TickerStart is a multiple of Target's interval, so setting to TickerStart")
-				RunTableObj[tickerStart] = append(RunTableObj[tickerStart], line)
-			} else {
-				log.Debug("Setting a start after ticker start", "startTime", tickerStart.Add(time.Duration(diffMod)*time.Second))
-				RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)] = append(RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)], line)
-			}
-		}
-
-	}
-	log.Info("Total RunTable buildup", "length", len(RunTableObj))
-
-}
-
 // RunLogLine makes runs an instance of a log line through the appropriate channel
 func RunLogLine(params LogLineProperties, sendTime time.Time) {
 	log.Info("Starting Individual Log Runner", "time", sendTime, "logline", params.PostBody)
@@ -223,7 +178,7 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 	case "syslog":
 		go sendLogLineSyslog(stringBody, params)
 	}
-
+	log.Info("Finished Individual Log Runner", "time", sendTime, "logline", params.PostBody)
 }
 
 // DispatchLogs takes a slice of Log Lines and a time and fires the ones listed, re-adding them to the Run Table where the next run should go

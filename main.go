@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"gologgen/loggenrunner"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 
 	log "gopkg.in/inconshreveable/log15.v2"
@@ -35,6 +37,50 @@ type ReplayFileMetaData struct {
 	TimestampRegex  string `json:"TimestampRegex"`
 	TimestampFormat string `json:"TimestampFormat"`
 	RepeatInterval  int    `json:"RepeatInterval"`
+}
+
+// InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
+func InitializeRunTable(RunTable *map[time.Time][]loggenrunner.LogLineProperties, Lines []loggenrunner.LogLineProperties, tickerStart time.Time) {
+	RunTableObj := *RunTable
+	for _, line := range Lines {
+		log.Debug("========== New Line ==========")
+		log.Debug("The literal time string", "time", line.StartTime)
+		// Get the log line target start time
+		var targetTime time.Time
+		if line.StartTime == "" {
+			targetTime = tickerStart
+		} else {
+			re := regexp.MustCompile(`\d+`)
+			targetHourMinSec := re.FindAllString(line.StartTime, -1)
+			targetHour, _ := strconv.Atoi(targetHourMinSec[0])
+			targetMin, _ := strconv.Atoi(targetHourMinSec[1])
+			targetSec, _ := strconv.Atoi(targetHourMinSec[2])
+			loc, _ := time.LoadLocation("America/Los_Angeles")
+			targetTime = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), targetHour, targetMin, targetSec, 0, loc).Truncate(time.Second)
+		}
+		log.Debug("The target time is translated to", "targetTime", targetTime)
+		log.Debug("The start time of the ticker is", "tickerStart", tickerStart)
+		diff := targetTime.Sub(tickerStart)
+		log.Debug("The diff between target and tickerStart is", "diff", diff)
+		diffMod := int(math.Abs(float64(int(diff.Seconds()) % line.IntervalSecs)))
+
+		switch {
+		case targetTime.Equal(tickerStart) || targetTime.After(tickerStart):
+			log.Debug("Target is equal to or after start, so appending to Run Table as is")
+			RunTableObj[targetTime] = append(RunTableObj[targetTime], line)
+		case targetTime.Before(tickerStart):
+			if diffMod == 0 {
+				log.Debug("TickerStart is a multiple of Target's interval, so setting to TickerStart")
+				RunTableObj[tickerStart] = append(RunTableObj[tickerStart], line)
+			} else {
+				log.Debug("Setting a start after ticker start", "startTime", tickerStart.Add(time.Duration(diffMod)*time.Second))
+				RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)] = append(RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)], line)
+			}
+		}
+
+	}
+	log.Info("Total RunTable buildup", "length", len(RunTableObj))
+
 }
 
 // storeDataFileLogLines takes the conf data, gets the associated files, and puts them in a big list of LogLine Objects
@@ -179,7 +225,7 @@ func main() {
 	// Add in some delay before starting off the ticker because we're not sure how long it will take to initialize our lines into the RunTable
 	targetTickerTime := time.Now().Add(5 * time.Second).Truncate(time.Second)
 
-	loggenrunner.InitializeRunTable(&RunTable, logLines, targetTickerTime)
+	InitializeRunTable(&RunTable, logLines, targetTickerTime)
 	log.Debug("Finished RunTable:\n", "RunTable", RunTable)
 
 	log.Info("==================== Starting the main event loop ==================")
