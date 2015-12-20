@@ -113,6 +113,11 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 
 		// Add the parsed fields to the result value
 		for i := 0; i < len(dataJSON.Lines); i++ {
+			// Bail if no Text
+			if dataJSON.Lines[i].PostBody == "" {
+				log.Error("Data Line must have a Text value", "json", dataJSON.Lines[i])
+				continue
+			}
 			logLines = append(logLines, dataJSON.Lines[i])
 		}
 	}
@@ -219,6 +224,12 @@ func main() {
 		return
 	}
 	log.Info("Parsed global config results", "results", confData)
+
+	// Bail on essential missing configs
+	if confData.OutputType == "" || (len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0) {
+		log.Error("Configuration was missing either an output type, or input files", "confg", confData)
+		return
+	}
 
 	// Create an object to stare DataFile LogLines
 	logLines := storeDataFileLogLines(confData)
