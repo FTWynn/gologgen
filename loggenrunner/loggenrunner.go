@@ -51,7 +51,7 @@ func randomizeString(text string, timeformat string) string {
 	// Bail if we can't get any randomizers
 	goodstring, err := regexp.MatchString(`\$\[[^\]]+\]`, text)
 	if err != nil {
-		log.Error("Something broke on parsing the text string with a regular expression", "error_msg", err)
+		log.Error("Something broke on parsing the text string with a regular expression", "error_msg", err, "text", text, "regex", `\$\[[^\]]+\]`)
 	}
 
 	//Return original string if 0 randomizers
@@ -145,7 +145,7 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Error("Something went amiss on submitting to Sumo", "error", err)
+		log.Error("Something went amiss on submitting to Sumo", "error", err, "line", string(stringBody))
 		return
 	}
 	if resp.StatusCode != 200 {
@@ -169,7 +169,7 @@ func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
 
 	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
 	if err != nil {
-		log.Error("Failed to create syslog connection, abandoning", "error", err)
+		log.Error("Failed to create syslog connection, abandoning", "error", err, "type", params.SyslogType, "syslogLocation", params.SyslogLoc)
 	}
 	defer conn.Close()
 

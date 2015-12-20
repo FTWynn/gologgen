@@ -211,16 +211,15 @@ func main() {
 	// Read in the config file
 	confText, err := ioutil.ReadFile("config/gologgen.conf")
 	if err != nil {
-		log.Error("Something went amiss on conf file read", "error_msg", err)
+		log.Error("Something went amiss on global conf file read", "error_msg", err, "text", confText)
 		return
 	}
-	log.Debug("Read in global config from file", "file", string(confText))
 
 	// Unmarshal the Global Config JSON into a struct
 	var confData GlobalConfStore
 	err = json.Unmarshal(confText, &confData)
 	if err != nil {
-		log.Error("something went amiss on parsing the global config file: ", "error_msg", err)
+		log.Error("Something went amiss on parsing the global config file: ", "error_msg", err, "text", confText)
 		return
 	}
 	log.Info("Parsed global config results", "results", confData)
@@ -249,8 +248,6 @@ func main() {
 	for thisTime := range tickerChannel {
 		log.Debug("Tick for time", "thisTime", thisTime.Truncate(time.Second))
 		go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
-		// Rework for old data
-		//go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second).Add(time.Duration(-1)*time.Second))
 	}
 
 }
