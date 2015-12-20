@@ -42,6 +42,11 @@ type ReplayFileMetaData struct {
 	RepeatInterval  int    `json:"RepeatInterval"`
 }
 
+func init() {
+	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
+	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15LazyFunctionName})
+}
+
 // InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
 func InitializeRunTable(RunTable *map[time.Time][]loggenrunner.LogLineProperties, Lines []loggenrunner.LogLineProperties, tickerStart time.Time) {
 	RunTableObj := *RunTable
@@ -198,11 +203,6 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 
 	log.Info("Finished storing normalized log lines", "count", len(logLines))
 	return
-}
-
-func init() {
-	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
-	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15FunctionName})
 }
 
 func main() {

@@ -41,7 +41,7 @@ type LogLineProperties struct {
 
 func init() {
 	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
-	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15FunctionName})
+	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15LazyFunctionName})
 }
 
 // randomizeString takes a string, looks for the random tokens (int, string, and timestamp), and replaces them
