@@ -9,11 +9,14 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"runtime"
 	"strconv"
 	"time"
 
-	log "gopkg.in/inconshreveable/log15.v2"
+	log15 "gopkg.in/inconshreveable/log15.v2"
 )
+
+var log log15.Logger
 
 // GlobalConfStore holds all the config data from the conf file
 type GlobalConfStore struct {
@@ -192,9 +195,18 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 	return
 }
 
+// log15FunctionName is a helper function to get the name of the current function
+func log15FunctionName() (functionName string) {
+	tempStorage := make([]uintptr, 10)
+	runtime.Callers(14, tempStorage)
+	functionName = runtime.FuncForPC(tempStorage[0]).Name()
+	return
+}
+
 func init() {
 	//log.SetLevel(log.InfoLevel)
-	log.Root().SetHandler(log.LvlFilterHandler(log.LvlInfo, log.StdoutHandler))
+	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
+	log = log15.New("function", log15.Lazy{Fn: log15FunctionName})
 }
 
 func main() {
