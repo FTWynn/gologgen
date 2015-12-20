@@ -3,6 +3,7 @@ package loggenrunner
 import (
 	"bytes"
 	"fmt"
+	"gologgen/loghelper"
 	"math/rand"
 	"net"
 	"net/http"
@@ -11,8 +12,10 @@ import (
 	"strings"
 	"time"
 
-	log "gopkg.in/inconshreveable/log15.v2"
+	log15 "gopkg.in/inconshreveable/log15.v2"
 )
+
+var log log15.Logger
 
 // LogGenDataFile represents a data file
 type LogGenDataFile struct {
@@ -34,6 +37,11 @@ type LogLineProperties struct {
 	SumoName        string  `json:"SumoName"`
 	StartTime       string  `json:"StartTime"`
 	HTTPClient      *http.Client
+}
+
+func init() {
+	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
+	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15FunctionName})
 }
 
 // randomizeString takes a string, looks for the random tokens (int, string, and timestamp), and replaces them
