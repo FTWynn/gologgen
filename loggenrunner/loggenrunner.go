@@ -38,6 +38,8 @@ type LogLineProperties struct {
 
 // randomizeString takes a string, looks for the random tokens (int, string, and timestamp), and replaces them
 func randomizeString(text string, timeformat string) string {
+	log.Debug("Starting String Randomization", "text", text, "timeFormat", timeformat)
+
 	// Bail if we can't get any randomizers
 	goodstring, err := regexp.MatchString(`\$\[[^\]]+\]`, text)
 	if err != nil {
@@ -53,7 +55,7 @@ func randomizeString(text string, timeformat string) string {
 	// Find all randomizing tokens
 	re := regexp.MustCompile(`\$\[[^\]]+\]`)
 	randos := re.FindAllString(text, -1)
-	log.Debug("A found random tokens", "randomTokens", randos, "num", len(randos))
+	log.Debug("A found random tokens", "num", len(randos), "randomTokens", randos)
 
 	// Create a list of new strings to be inserted where the tokens were
 	var newstrings []string
@@ -118,7 +120,7 @@ func randomizeString(text string, timeformat string) string {
 		}
 	}
 
-	log.Info("Randomization complete", "newString", strings.Join(newLogLine, ""))
+	log.Debug("Randomization complete", "newString", strings.Join(newLogLine, ""))
 
 	return strings.Join(newLogLine, "")
 }
@@ -150,18 +152,19 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 			time.Sleep(time.Duration(10) * time.Second)
 		}
 	}
-	//log.Debug("Response from Sumo: ", resp)
+	log.Debug("Response from Sumo", "statusCode", resp.StatusCode)
 }
 
 //sendLogLineSyslog sends the log on tcp/udp, WITHOUT retrying
 func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
+	log.Info("Sending log to syslog", "line", string(stringBody), "location", params.SyslogLoc)
+
 	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
 	if err != nil {
 		log.Error("Failed to create syslog connection, abandoning", "error", err)
 	}
 	defer conn.Close()
-	// Post to Syslog
-	log.Info("Sending log to Syslog", "line", string(stringBody))
+
 	fmt.Fprintf(conn, string(stringBody))
 }
 
@@ -209,4 +212,5 @@ func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Tim
 	}
 
 	delete(RunTableObj, ThisTime)
+	log.Info("Finished dispatching logs", "time", ThisTime)
 }
