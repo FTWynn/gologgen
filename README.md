@@ -16,17 +16,20 @@ Most of it's pretty self explanatory. The only exception being the timestamp for
 
     01/02 03:04:05PM '06 -0700
 
-I may clean this up in the future, but for now
+I may clean this up in the future, but for now, this is what we've got.
 
+## Usage
+
+There are a few implications to this setup.
+
+1. You generally can't specify a log to be created more than once per second in a data file. You could list it as two separate items, but because the lowest increment worked on is 1 second, there's no config for it.
+2. There's currently no way to specify something like "Run every 5 seconds for a 10 minutes window, then stop for an hour." You best bet presently is to use replay files, which support all the wildcards, but not the std deviations.
 
 ## Roadmap
 
 There are a number of things I'd like to get to, but I'm not quite good enough to know how feasible any of them are yet. In rough order of what I'll attempt next, here's what's currently on the list.
 
-* Validate that the conf and data files are correctly formatted
-* Provide builds
 * Add a "fast forward" capability to populate the logs as fast as possible, rather than in live time
-* Randomizer should check for valid syntax inside the group
-* Some way to link either log lines together (logouts should wait on logins, and logins shouldn't repeat without logouts)
-* More efficiently pass around the syslog client
-* ... tests?
+* Provide builds
+* ... tests???
+* ... docs???
