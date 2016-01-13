@@ -57,7 +57,7 @@ There are a few implications to this structure.
 1. You generally can't specify a log to be created more than once per second in a data file. You could list it as two separate items, but because the lowest increment worked on is 1 second, there's no single config for it.
 2. There's currently no way to specify something like "Run every 5 seconds for a 10 minutes window, then stop for an hour." Your best bet presently is to use replay files, which support all the wildcards but not the std deviations, and toy with the replay interval compared to the data listed.
 
-Log Level (DEBUG, INFO, WARN, ERROR) for the *gologgen applicaiton* is controlled by a runtime flag:
+Log Level (DEBUG, INFO, WARN, ERROR) for the *gologgen application* is controlled by a runtime flag:
 
     gologgen_win_amd64 -level=INFO
 
