@@ -55,4 +55,10 @@ It seems if I try to fire too many events in one second, they disappear. I can't
 
 A look around for debuggers shows positively dreadful results in the go arena. Nothing seems to elegantly handle concurrency (which I suppose makes sense in a "pause the world" way). In either case, this one is particularly frustrating.
 
-... ugh, finally. There was a negative mod that caused the timestamps to be shifted backwards from teh target time instead of forwards. Bleh.
+... ugh, finally. There was a negative mod that caused the timestamps to be shifted backwards from the target time instead of forwards. Bleh.
+
+### 2016-01-12
+
+I put down this project for a while, but picked it up again on having to create a build for a coworker. It strikes me that the documentation wasn't nearly clear enough, and setting log levels would be super important from a binary perspective.
+
+Onward to it!
