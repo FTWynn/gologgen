@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -44,7 +45,25 @@ type ReplayFileMetaData struct {
 }
 
 func init() {
-	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
+	// Set global logging levels by the flag, default to WARN if not defined
+	var level string
+	flag.StringVar(&level, "level", "WARN", "a string")
+
+	flag.Parse()
+
+	switch level {
+	case "DEBUG":
+		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlDebug, log15.StdoutHandler))
+	case "INFO":
+		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
+	case "WARN":
+		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlWarn, log15.StdoutHandler))
+	case "ERROR":
+		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlError, log15.StdoutHandler))
+	default:
+		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlWarn, log15.StdoutHandler))
+	}
+
 	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15LazyFunctionName})
 }
 
