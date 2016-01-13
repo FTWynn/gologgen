@@ -3,8 +3,6 @@ package main
 import (
 	"bufio"
 	"encoding/json"
-	"gologgen/loggenrunner"
-	"gologgen/loghelper"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -12,6 +10,9 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/ftwynn/gologgen/loggenrunner"
+	"github.com/ftwynn/gologgen/loghelper"
 
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
