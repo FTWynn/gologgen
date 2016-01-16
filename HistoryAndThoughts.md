@@ -91,3 +91,7 @@ I went with main covering steps 1 and 2 for now, though I suppose it could alway
 I also find myself unsure of where my data types should go. they don't seem limited enough to go in the helper packages, though putting them in the big package seems a little weird as well.
 
 Eh, we'll start with main for now.
+
+... is what I thought... up until I couldn't figure out how to import structs from main and use them in sub packages.
+
+I guess the pattern would then be, put the structs in the most specific sub package that will use them, and import them everywhere else.
