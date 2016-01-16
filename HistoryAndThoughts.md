@@ -72,3 +72,16 @@ I've also realized that I'm going to need to reorganize the project functions. "
 Finally, there's a design decision that's weighing on me as I consider adding support for Slack output. It's essentially an HTTP Post, so nothing too complicated there, but I need to figure out if I'm assuming all the logs go to one output, or if each input file/line can be configured to a different output. That'll require a pretty significant re-org... but at this point it seems like I'm in for one of those either way.
 
 Just thought I'd share the problems of a post 1.0 release.
+
+=====
+
+I was having some trouble deciding what broken out packages should be responsible for. I envision four main areas of the program:
+
+1. Read in config data
+2. Parse and store data for runtime
+3. Augment data at runtime
+4. Send data
+
+It's pretty clear the last should be its own package. There should be a package for data munging, which is definitely step 3, and main should probably handle step 1. Step 2 however is a little ambiguous. I would think main programs usually handle run loops, which make it a good candidate for that, but as I add features and adjust configs, it almost seems like a data munging job.
+
+I went with main covering steps 1 and 2 for now, though I suppose it could always be changed later.
