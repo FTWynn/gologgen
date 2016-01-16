@@ -85,3 +85,9 @@ I was having some trouble deciding what broken out packages should be responsibl
 It's pretty clear the last should be its own package. There should be a package for data munging, which is definitely step 3, and main should probably handle step 1. Step 2 however is a little ambiguous. I would think main programs usually handle run loops, which make it a good candidate for that, but as I add features and adjust configs, it almost seems like a data munging job.
 
 I went with main covering steps 1 and 2 for now, though I suppose it could always be changed later.
+
+=====
+
+I also find myself unsure of where my data types should go. they don't seem limited enough to go in the helper packages, though putting them in the big package seems a little weird as well.
+
+Eh, we'll start with main for now.
