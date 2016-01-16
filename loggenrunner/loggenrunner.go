@@ -3,7 +3,6 @@ package loggenrunner
 import (
 	"bytes"
 	"fmt"
-	"gologgen/loghelper"
 	"math/rand"
 	"net"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ftwynn/gologgen/loghelper"
 
 	log15 "gopkg.in/inconshreveable/log15.v2"
 )
