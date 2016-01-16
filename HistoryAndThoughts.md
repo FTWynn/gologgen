@@ -62,3 +62,13 @@ A look around for debuggers shows positively dreadful results in the go arena. N
 I put down this project for a while, but picked it up again on having to create a build for a coworker. It strikes me that the documentation wasn't nearly clear enough, and setting log levels would be super important from a binary perspective.
 
 Onward to it!
+
+### 2016-01-16
+
+I moved the builds to the releases page in github. Seems obvious on reflection, but that stuff never makes sense at the moment.
+
+I've also realized that I'm going to need to reorganize the project functions. "Runner" isn't very descriptive, and I should probably figure out an easier way to break them apart so I can make tests better.
+
+Finally, there's a design decision that's weighing on me as I consider adding support for Slack output. It's essentially an HTTP Post, so nothing too complicated there, but I need to figure out if I'm assuming all the logs go to one output, or if each input file/line can be configured to a different output. That'll require a pretty significant re-org... but at this point it seems like I'm in for one of those either way.
+
+Just thought I'd share the problems of a post 1.0 release.
