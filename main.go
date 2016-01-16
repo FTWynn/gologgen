@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ftwynn/gologgen/loggenrunner"
+	"github.com/ftwynn/gologgen/loggensender"
 	"github.com/ftwynn/gologgen/loghelper"
 
 	log15 "gopkg.in/inconshreveable/log15.v2"
@@ -44,6 +44,11 @@ type ReplayFileMetaData struct {
 	RepeatInterval  int    `json:"RepeatInterval"`
 }
 
+// LogGenDataFile represents a data file
+type LogGenDataFile struct {
+	Lines []loggensender.LogLineProperties `json:"lines"`
+}
+
 func init() {
 	// Set global logging levels by the flag, default to WARN if not defined
 	var level string
@@ -68,7 +73,7 @@ func init() {
 }
 
 // InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
-func InitializeRunTable(RunTable *map[time.Time][]loggenrunner.LogLineProperties, Lines []loggenrunner.LogLineProperties, tickerStart time.Time) {
+func InitializeRunTable(RunTable *map[time.Time][]loggensender.LogLineProperties, Lines []loggensender.LogLineProperties, tickerStart time.Time) {
 	RunTableObj := *RunTable
 	for _, line := range Lines {
 		log.Debug("========== New Line ==========")
@@ -112,7 +117,7 @@ func InitializeRunTable(RunTable *map[time.Time][]loggenrunner.LogLineProperties
 }
 
 // storeDataFileLogLines takes the conf data, gets the associated files, and puts them in a big list of LogLine Objects
-func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.LogLineProperties) {
+func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.LogLineProperties) {
 	log.Info("Entering storeDataFileLogLines", "confData", confData, "logLines length", len(logLines))
 
 	// Return if no data files
@@ -120,7 +125,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 		log.Error("No data files or replay files were found in the global config file.")
 	}
 
-	dataJSON := loggenrunner.LogGenDataFile{}
+	dataJSON := LogGenDataFile{}
 
 	// First, read in any data files
 	for i := 0; i < len(confData.DataFiles); i++ {
@@ -185,7 +190,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggenrunner.Lo
 			log.Debug("New Start Time: ", startTime)
 			augmentedLine := timeRegex.ReplaceAllString(line, "$[time,stamp]")
 			log.Debug("New augmented line: ", augmentedLine)
-			logLine := loggenrunner.LogLineProperties{PostBody: augmentedLine, IntervalSecs: replayFile.RepeatInterval, IntervalStdDev: 0, StartTime: startTime, TimestampFormat: replayFile.TimestampFormat}
+			logLine := loggensender.LogLineProperties{PostBody: augmentedLine, IntervalSecs: replayFile.RepeatInterval, IntervalStdDev: 0, StartTime: startTime, TimestampFormat: replayFile.TimestampFormat}
 			log.Debug("New LogLine Object: ", logLine)
 
 			logLines = append(logLines, logLine)
@@ -250,10 +255,10 @@ func main() {
 		return
 	}
 
-	// Create an object to stare DataFile LogLines
+	// Create an object to store DataFile LogLines
 	logLines := storeDataFileLogLines(confData)
 
-	RunTable := make(map[time.Time][]loggenrunner.LogLineProperties)
+	RunTable := make(map[time.Time][]loggensender.LogLineProperties)
 
 	// Add in some delay before starting off the ticker because we're not sure how long it will take to initialize our lines into the RunTable
 	targetTickerTime := time.Now().Add(5 * time.Second).Truncate(time.Second)
@@ -267,7 +272,7 @@ func main() {
 	tickerChannel := time.Tick(1 * time.Second)
 	for thisTime := range tickerChannel {
 		log.Debug("Tick for time", "thisTime", thisTime.Truncate(time.Second))
-		go loggenrunner.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
+		go loggensender.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
 	}
 
 }
