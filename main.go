@@ -214,15 +214,6 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 		if logLines[i].SyslogLoc == "" {
 			logLines[i].SyslogLoc = confData.SyslogLoc
 		}
-		if logLines[i].SumoName == "" {
-			logLines[i].SumoName = "GeneratedFilename.txt"
-		}
-		if logLines[i].SumoCategory == "" {
-			logLines[i].SumoCategory = "Generated_Category"
-		}
-		if logLines[i].SumoHost == "" {
-			logLines[i].SumoHost = "GeneratedHost"
-		}
 
 	}
 

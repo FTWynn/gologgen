@@ -5,27 +5,48 @@
       "IntervalSecs" : 4,
       "IntervalStdDev" : 0.5,
       "TimestampFormat" : "Jan 02 15:04:05",
-      "SumoCategory" : "OverwrittenCategory1",
-      "SumoName" : "OverwrittenName1",
-      "SumoHost" : "OverwrittenHost1"
+      "Headers" : [
+        {"Header" : "Content-type",
+          "Value" : "plain/text"},
+        {"Header" :"X-Sumo-Category",
+          "Value" : "OverwrittenCategory1"},
+        {"Header" :"X-Sumo-Name",
+          "Value" : "OverwrittenName1"},
+        {"Header" :"X-Sumo-Host",
+          "Value" : "OverwrittenHost1"}
+        ]
     },
     {
       "Text" : "$[time,stamp] Test Random Category: $[Post,Thing,Stuff]",
       "IntervalSecs" : 4,
       "IntervalStdDev" : 1,
       "TimestampFormat" : "2006-01-02 15:04:05",
-      "SumoCategory" : "OverwrittenCategory2",
-      "SumoName" : "OverwrittenName2",
-      "SumoHost" : "OverwrittenHost2"
+      "Headers" : [
+        {"Header" : "Content-type",
+          "Value" : "plain/text"},
+        {"Header" :"X-Sumo-Category",
+          "Value" : "OverwrittenCategory2"},
+        {"Header" :"X-Sumo-Name",
+          "Value" : "OverwrittenName2"},
+        {"Header" :"X-Sumo-Host",
+          "Value" : "OverwrittenHost2"}
+        ]
     },
     {
       "Text" : "Test No Randoms: Ta da!",
       "IntervalSecs" : 6,
       "IntervalStdDev" : 0.2,
       "TimestampFormat" : "2006-01-02 15:04:05",
-      "SumoCategory" : "OverwrittenCategory3",
-      "SumoName" : "OverwrittenName4",
-      "SumoHost" : "OverwrittenHost5"
+      "Headers" : [
+        {"Header" : "Content-type",
+          "Value" : "plain/text"},
+        {"Header" :"X-Sumo-Category",
+          "Value" : "OverwrittenCategory3"},
+        {"Header" :"X-Sumo-Name",
+          "Value" : "OverwrittenName4"},
+        {"Header" :"X-Sumo-Host",
+          "Value" : "OverwrittenHost5"}
+        ]
     },
     {
       "Text" : "$[time,stamp] Rock Solid Repeater",
@@ -33,9 +54,16 @@
       "IntervalStdDev" : 0,
       "StartTime" : "12:03:01",
       "TimestampFormat" : "Jan 02 15:04:05",
-      "SumoCategory" : "OverwrittenCategory3",
-      "SumoName" : "OverwrittenName6",
-      "SumoHost" : "OverwrittenHost6"
+      "Headers" : [
+        {"Header" : "Content-type",
+          "Value" : "plain/text"},
+        {"Header" :"X-Sumo-Category",
+          "Value" : "OverwrittenCategory3"},
+        {"Header" :"X-Sumo-Name",
+          "Value" : "OverwrittenName6"},
+        {"Header" :"X-Sumo-Host",
+          "Value" : "OverwrittenHost6"}
+        ]
     }
     ]
 }

@@ -22,18 +22,25 @@ type LogLineProperties struct {
 	HTTPLoc         string `json:"HTTPLoc"`
 	SyslogType      string
 	SyslogLoc       string
-	PostBody        string  `json:"Text"`
-	IntervalSecs    int     `json:"IntervalSecs"`
-	IntervalStdDev  float64 `json:"IntervalStdDev"`
-	TimestampFormat string  `json:"TimestampFormat"`
-	SumoCategory    string  `json:"SumoCategory"`
+	PostBody        string              `json:"Text"`
+	IntervalSecs    int                 `json:"IntervalSecs"`
+	IntervalStdDev  float64             `json:"IntervalStdDev"`
+	TimestampFormat string              `json:"TimestampFormat"`
+	Headers         []LogLineHTTPHeader `json:"Headers"`
+	/*SumoCategory    string  `json:"SumoCategory"`
 	SumoHost        string  `json:"SumoHost"`
-	SumoName        string  `json:"SumoName"`
-	StartTime       string  `json:"StartTime"`
-	HTTPClient      *http.Client
+	SumoName        string  `json:"SumoName"`*/
+	StartTime  string `json:"StartTime"`
+	HTTPClient *http.Client
 }
 
-// I'm not really sure why this bit is required... I may need to build my own logging library so I can grasp all the particulars
+// LogLineHTTPHeader holds the key and vlue for each header
+type LogLineHTTPHeader struct {
+	Header string `json:"Header"`
+	Value  string `json:"Value"`
+}
+
+// I'm not really sure why this bit is required (and doesn't overwrite what's in main)... I may need to build my own logging library so I can grasp all the particulars
 func init() {
 	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlError, log15.StdoutHandler))
 	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15LazyFunctionName})
@@ -71,7 +78,7 @@ func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Tim
 	log.Info("Finished dispatching logs", "time", ThisTime)
 }
 
-// RunLogLine makes runs an instance of a log line through the appropriate output
+// RunLogLine runs an instance of a log line through the appropriate output
 func RunLogLine(params LogLineProperties, sendTime time.Time) {
 	log.Info("Starting Individual Log Runner", "time", sendTime, "logline", params.PostBody)
 
@@ -92,9 +99,9 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 	// Post to Sumo
 	log.Info("Sending log to Sumo over HTTP", "line", string(stringBody))
 	req, err := http.NewRequest("POST", params.HTTPLoc, bytes.NewBuffer(stringBody))
-	req.Header.Add("X-Sumo-Category", params.SumoCategory)
-	req.Header.Add("X-Sumo-Host", params.SumoHost)
-	req.Header.Add("X-Sumo-Name", params.SumoName)
+	for _, header := range params.Headers {
+		req.Header.Add(header.Header, header.Value)
+	}
 	log.Debug("Request object to send to Sumo", "request", req)
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
