@@ -29,9 +29,7 @@ Text | Log message to write. The text is always interpreted literally except for
 IntervalSecs | Interval in seconds to repeat the message. The minimum value is 1.
 IntervalStdDev | Standard Deviation of the Interval if you want to add some randomness. Specified as a float.
 TimestampFormat | The timestamp format to write on the message. See note below.
-SumoCategory | If sending to Sumo Logic via http, this specifies the header to overwrite the Source Category.
-SumoName | If sending to Sumo Logic via http, this specifies the header to overwrite the Source Name.
-SumoHost | If sending to Sumo Logic via http, this specifies the header to overwrite the Source Host.
+Headers | An array of objects with a Header and Value key, that correspond to http request headers
 
 Replay Parameter | Notes
 --------- | -----
