@@ -1,0 +1,7 @@
+language: go
+
+go:
+  - tip
+
+install:
+  - go get gopkg.in/inconshreveable/log15.v2"
