@@ -4,4 +4,4 @@ go:
   - tip
 
 install:
-  - go get gopkg.in/inconshreveable/log15.v2"
+  - go get gopkg.in/inconshreveable/log15.v2
