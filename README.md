@@ -1,6 +1,6 @@
 ![lologgen logo](http://i.imgur.com/xv2D2lE.png)
 
-![Go report card](http://goreportcard.com/badge/ftwynn/gologgen)
+![Go report card](http://goreportcard.com/badge/ftwynn/gologgen) ![Travis Build Badge](https://travis-ci.org/FTWynn/gologgen.svg?branch=master)
 
 gologgen is a generic log generator written in go. I'm writing it because I want to learn golang, and there was a need for a universal, well documented fake log generator at my job. As such, please let me know if I've done anything poorly, because anything I learn now will help me suck less in the future.
 
