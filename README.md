@@ -1,6 +1,6 @@
 ![lologgen logo](http://i.imgur.com/xv2D2lE.png)
 
-![Go report card](http://goreportcard.com/badge/ftwynn/gologgen) ![Travis Build Badge](https://travis-ci.org/FTWynn/gologgen.svg?branch=master)
+![Travis Build Badge](https://travis-ci.org/FTWynn/gologgen.svg?branch=master) ![Go report card](http://goreportcard.com/badge/ftwynn/gologgen)
 
 gologgen is a generic log generator written in go. I'm writing it because I want to learn golang, and there was a need for a universal, well documented fake log generator at my job. All feedback is greatly appreciated.
 
@@ -35,7 +35,7 @@ Headers | An array of objects with a Header and Value key, that correspond to ht
 Replay Parameter | Notes
 --------- | -----
 Path | Path to the file. This is relative to the executable, and a good idea would be to use the config directory.
-TimestampRegex | A go regular expression that pulls out the timestamp from the log line into named capture groups: year, month, day, hour, minute, second. Most of these are ignored (year, month, day), but the others are important.
+TimestampRegex | A go regular expression that pulls out the timestamp from the log line into named capture groups: year, month, day, hour, minute, second. Most of these are ignored for now (year, month, day), but the others are important.
 TimestampFormat | The timestamp format to write on the message. See note below.
 RepeatInterval | The number of seconds between replays of the file. Be mindful that if you set this to less than the timespan of your data file, things will eventually blow up. (I should probably fix that at some point...)
 
