@@ -27,11 +27,8 @@ type LogLineProperties struct {
 	IntervalStdDev  float64             `json:"IntervalStdDev"`
 	TimestampFormat string              `json:"TimestampFormat"`
 	Headers         []LogLineHTTPHeader `json:"Headers"`
-	/*SumoCategory    string  `json:"SumoCategory"`
-	SumoHost        string  `json:"SumoHost"`
-	SumoName        string  `json:"SumoName"`*/
-	StartTime  string `json:"StartTime"`
-	HTTPClient *http.Client
+	StartTime       string              `json:"StartTime"`
+	HTTPClient      *http.Client
 }
 
 // LogLineHTTPHeader holds the key and vlue for each header
