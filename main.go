@@ -19,6 +19,7 @@ import (
 )
 
 var log log15.Logger
+var confPath string
 
 // GlobalConfStore holds all the config data from the conf file
 type GlobalConfStore struct {
@@ -55,6 +56,7 @@ func init() {
 	// Set global logging levels by the flag, default to WARN if not defined
 	var level string
 	flag.StringVar(&level, "level", "WARN", "a string")
+	flag.StringVar(&confPath, "conf", "config/gologgen.conf", "a string")
 
 	flag.Parse()
 
@@ -228,7 +230,7 @@ func main() {
 	log.Info("Starting main program")
 
 	// Read in the config file
-	confText, err := ioutil.ReadFile("config/gologgen.conf")
+	confText, err := ioutil.ReadFile(confPath)
 	if err != nil {
 		log.Error("Something went amiss on global conf file read", "error_msg", err, "text", confText)
 		return

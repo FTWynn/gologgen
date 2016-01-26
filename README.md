@@ -6,11 +6,11 @@ gologgen is a generic log generator written in go. I'm writing it because I want
 
 ## Installation
 
-You can use the builds in any directory on the appropriate platform (setting the linux and osx builds to executable before you do). In addition to the binary, a config directory **must** be next to it with the config file format defined below.
+You can use the builds in any directory on the appropriate platform (setting the linux and osx builds to executable before you do). In addition to the binary, you'll need a config file, and some number of data or replay files.
 
 ## Configuration
 
-The first needed file is gologgen.conf, which stores global variables in a JSON object. A working example is in the repo's config directory with all of the parameters filled out, but here are the current options:
+The first needed file is gologgen.conf, which stores global variables in a JSON object. By default, the program will look for gologgen.conf in a config directory alongside the executable, but you can set the conf to what and wherever with the *conf* flag at runtime. A working example is in the repo's config directory with all of the parameters filled out, but here are the current options:
 
 Conf Parameter | Notes
 --------- | -----
@@ -22,7 +22,7 @@ FileOutputPath | Path of the file to write out to. Will *overwrite* whatever alr
 DataFiles | Array of objects describing DataFiles. Only contains "Path".
 ReplayFiles | Array of objects describing ReplayFiles. Contains values described below.
 
-As you might guess, the second thing you'll need is a combination of data files (JSON descriptions of log lines) and replay files (plain captures of raw log data). The parameters for each are below. Remember that these parameters go in the DataFile if going that route, or in the gologgen.conf if you're using Replayfiles. The idea is that you can drop in a capture as a replay, without going in and editing it (though you could add wildcards to it if you wanted). If that sounds confusing, just use the examples as a guide.
+The second thing you'll need is some combination of data files (JSON descriptions of log lines) and replay files (plain captures of raw log data). The parameters for each are below. Remember that these parameters go in the DataFile if going that route, or in the gologgen.conf if you're using Replayfiles. The idea is that you can drop in a capture as a replay, without going in and editing it (though you could add wildcards to it if you wanted). If that sounds confusing, just use the examples as a guide.
 
 DataFile Parameter | Notes
 --------- | -----
