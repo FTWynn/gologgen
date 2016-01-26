@@ -14,10 +14,11 @@ The first needed file is gologgen.conf, which stores global variables in a JSON 
 
 Conf Parameter | Notes
 --------- | -----
-OutputType | "http" or "syslog"
+OutputType | "http", "syslog", or "file"
 httpLoc | URL of the http endpoint to send logs. Supports https.
 SyslogLoc | Location to send syslog traffic, in the form of IP:port
 SyslogType | "tcp" or "udp"
+FileOutputPath | Path of the file to write out to. Will *overwrite* whatever already exists.
 DataFiles | Array of objects describing DataFiles. Only contains "Path".
 ReplayFiles | Array of objects describing ReplayFiles. Contains values described below.
 

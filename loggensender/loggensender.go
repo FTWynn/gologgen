@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/ftwynn/gologgen/loggenmunger"
@@ -29,6 +30,7 @@ type LogLineProperties struct {
 	Headers         []LogLineHTTPHeader `json:"Headers"`
 	StartTime       string              `json:"StartTime"`
 	HTTPClient      *http.Client
+	FileHandler     *os.File
 }
 
 // LogLineHTTPHeader holds the key and vlue for each header
@@ -87,6 +89,8 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 		go sendLogLineHTTP(params.HTTPClient, stringBody, params)
 	case "syslog":
 		go sendLogLineSyslog(stringBody, params)
+	case "file":
+		go sendLogLineFile(stringBody, params)
 	}
 	log.Info("Finished Individual Log Runner", "time", sendTime, "logline", params.PostBody)
 }
@@ -132,4 +136,16 @@ func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
 	defer conn.Close()
 
 	fmt.Fprintf(conn, string(stringBody))
+}
+
+//sendLogLineFile writes log lines to a file
+func sendLogLineFile(stringBody []byte, params LogLineProperties) {
+	log.Info("Writing log to file", "line", string(stringBody))
+
+	_, err := params.FileHandler.Write(append(stringBody, []byte("\n")...))
+	if err != nil {
+		log.Error("Error writing to file", "error", err)
+		panic(err)
+	}
+
 }

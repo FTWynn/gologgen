@@ -22,13 +22,15 @@ var log log15.Logger
 
 // GlobalConfStore holds all the config data from the conf file
 type GlobalConfStore struct {
-	HTTPLoc     string               `json:"httpLoc"`
-	OutputType  string               `json:"OutputType"`
-	SyslogType  string               `json:"SyslogType"`
-	SyslogLoc   string               `json:"SyslogLoc"`
-	DataFiles   []DataFileMetaData   `json:"DataFiles"`
-	ReplayFiles []ReplayFileMetaData `json:"ReplayFiles"`
-	HTTPClient  http.Client
+	HTTPLoc        string               `json:"httpLoc"`
+	OutputType     string               `json:"OutputType"`
+	SyslogType     string               `json:"SyslogType"`
+	SyslogLoc      string               `json:"SyslogLoc"`
+	FileOutputPath string               `json:"FileOutputPath"`
+	DataFiles      []DataFileMetaData   `json:"DataFiles"`
+	ReplayFiles    []ReplayFileMetaData `json:"ReplayFiles"`
+	HTTPClient     http.Client
+	FileHandler    *os.File
 }
 
 // DataFileMetaData stores the configs around data files
@@ -201,6 +203,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 	// Set individual log lines to global configs / defaults if need be
 	for i := 0; i < len(logLines); i++ {
 		logLines[i].HTTPClient = &confData.HTTPClient
+		logLines[i].FileHandler = confData.FileHandler
 
 		if logLines[i].OutputType == "" {
 			logLines[i].OutputType = confData.OutputType
@@ -244,6 +247,17 @@ func main() {
 	if confData.OutputType == "" || (len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0) {
 		log.Error("Configuration was missing either an output type, or input files", "confg", confData)
 		return
+	}
+
+	// Initialize the FileHandler if needed
+	if confData.OutputType == "file" {
+		f, err := os.Create(confData.FileOutputPath)
+		if err != nil {
+			log.Error("Error in creating the output file", "FileOutputPath", confData.FileOutputPath)
+			return
+		}
+		confData.FileHandler = f
+		defer f.Close()
 	}
 
 	// Create an object to store DataFile LogLines
