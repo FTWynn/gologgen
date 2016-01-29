@@ -20,7 +20,7 @@
       "Text" : "$[time,stamp] Test Random Category: $[Post,Thing,Stuff]",
       "IntervalSecs" : 4,
       "IntervalStdDev" : 1,
-      "TimestampFormat" : "2006-01-02 15:04:05",
+      "TimestampFormat" : "epoch",
       "Headers" : [
         {"Header" : "Content-type",
           "Value" : "plain/text"},
@@ -53,7 +53,7 @@
       "IntervalSecs" : 5,
       "IntervalStdDev" : 0,
       "StartTime" : "12:03:01",
-      "TimestampFormat" : "Jan 02 15:04:05",
+      "TimestampFormat" : "epochnano",
       "Headers" : [
         {"Header" : "Content-type",
           "Value" : "plain/text"},

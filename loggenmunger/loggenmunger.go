@@ -86,7 +86,17 @@ func RandomizeString(text string, timeformat string) string {
 		case "Timestamp":
 			t := time.Now()
 			log.Debug("Current time", "now", t)
-			timeformatted := t.Format(timeformat)
+			var timeformatted string
+			switch timeformat {
+			case "epoch":
+				timeformatted = strconv.FormatInt(t.Unix(), 10)
+			case "epochmilli":
+				timeformatted = strconv.FormatInt(t.UnixNano()/1000000, 10)
+			case "epochnano":
+				timeformatted = strconv.FormatInt(t.UnixNano(), 10)
+			default:
+				timeformatted = t.Format(timeformat)
+			}
 			log.Debug("Formatted time", "now", timeformatted)
 
 			newstrings = append(newstrings, timeformatted)

@@ -49,6 +49,8 @@ Most of the above is pretty self explanatory. The only exception being the Times
 
 In the future there may be an enhancement to use YYYY-MM-DD syntax, but at the moment we're going with the raw golang behavior. Again, check the examples if it doesn't seem clear.
 
+You can also specify one of three values for epoch time instead: epoch, epochmilli, and epochnano.
+
 ## Behavior Implications
 
 There are a few implications to this structure.
