@@ -85,20 +85,10 @@ func RandomizeString(text string, timeformat string) string {
 			newstrings = append(newstrings, strconv.Itoa(tempnum+num0))
 		case "Timestamp":
 			t := time.Now()
-			log.Debug("Current time", "now", t)
-			var timeformatted string
-			switch timeformat {
-			case "epoch":
-				timeformatted = strconv.FormatInt(t.Unix(), 10)
-			case "epochmilli":
-				timeformatted = strconv.FormatInt(t.UnixNano()/1000000, 10)
-			case "epochnano":
-				timeformatted = strconv.FormatInt(t.UnixNano(), 10)
-			default:
-				timeformatted = t.Format(timeformat)
+			timeformatted, err := formatTimestamp(t, timeformat)
+			if err != nil {
+				log.Error("Formatting the timestamp broke")
 			}
-			log.Debug("Formatted time", "now", timeformatted)
-
 			newstrings = append(newstrings, timeformatted)
 		}
 	}
@@ -116,4 +106,21 @@ func RandomizeString(text string, timeformat string) string {
 	log.Debug("Randomization complete", "newString", strings.Join(newLogLine, ""))
 
 	return strings.Join(newLogLine, "")
+}
+
+func formatTimestamp(t time.Time, timeformat string) (string, error) {
+	log.Debug("Current time", "now", t)
+	var timeformatted string
+	switch timeformat {
+	case "epoch":
+		timeformatted = strconv.FormatInt(t.Unix(), 10)
+	case "epochmilli":
+		timeformatted = strconv.FormatInt(t.UnixNano()/1000000, 10)
+	case "epochnano":
+		timeformatted = strconv.FormatInt(t.UnixNano(), 10)
+	default:
+		timeformatted = t.Format(timeformat)
+	}
+	log.Debug("Formatted time", "now", timeformatted)
+	return timeformatted, nil
 }
