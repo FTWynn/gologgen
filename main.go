@@ -136,13 +136,13 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 	for i := 0; i < len(confData.DataFiles); i++ {
 		dataText, err := ioutil.ReadFile(confData.DataFiles[i].Path)
 		if err != nil {
-			log.Error("Something went amiss on data file read: ", err)
+			log.Error("Something went amiss on data file read: ", "error_msg", err)
 		}
 
 		// Convert the data to something we can work with
 		err = json.Unmarshal(dataText, &dataJSON)
 		if err != nil {
-			log.Error("Something went amiss on parsing the data file: ", err)
+			log.Error("Something went amiss on parsing the data file: ", "error_msg", err)
 			return
 		}
 
@@ -163,7 +163,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 
 		file, err := os.Open(replayFile.Path)
 		if err != nil {
-			log.Error("Something went amiss on replay file read: ", err)
+			log.Error("Something went amiss on replay file read: ", "error_msg", err)
 		}
 		defer file.Close()
 

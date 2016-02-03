@@ -107,7 +107,7 @@ func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLinePrope
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Error("Something went amiss on submitting to Sumo", "error", err, "line", string(stringBody))
+		log.Error("Something went amiss on submitting to Sumo", "error_msg", err, "line", string(stringBody))
 		return
 	}
 	if resp.StatusCode != 200 {
@@ -131,7 +131,7 @@ func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
 
 	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
 	if err != nil {
-		log.Error("Failed to create syslog connection, abandoning", "error", err, "type", params.SyslogType, "syslogLocation", params.SyslogLoc)
+		log.Error("Failed to create syslog connection, abandoning", "error_msg", err, "type", params.SyslogType, "syslogLocation", params.SyslogLoc)
 	}
 	defer conn.Close()
 
@@ -144,7 +144,7 @@ func sendLogLineFile(stringBody []byte, params LogLineProperties) {
 
 	_, err := params.FileHandler.Write(append(stringBody, []byte("\n")...))
 	if err != nil {
-		log.Error("Error writing to file", "error", err)
+		log.Error("Error writing to file", "error_msg", err)
 		panic(err)
 	}
 
