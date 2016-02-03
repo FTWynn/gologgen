@@ -8,9 +8,23 @@ gologgen is a generic log generator written in go. I'm writing it because I want
 
 Grab the latest release from the [Releases Page](https://github.com/FTWynn/gologgen/releases). You can use the builds in any directory on the appropriate platform (setting the linux and osx builds to executable before you do). In addition to the binary, you'll need a config file, and some number of data or replay files.
 
-## Configuration
+## Getting Started
 
-The first needed file is gologgen.conf, which stores global variables in a JSON object. By default, the program will look for gologgen.conf in a config directory alongside the executable, but you can set the conf to what and wherever with the *conf* flag at runtime. A working example is in the repo's config directory with all of the parameters filled out, but here are the current options:
+There are a number of config examples provided in the config directory. You can start with a simple one, or shoot for the batteries included example. The config file ignores any values that aren't related to the OutputType.
+
+You can either name your config gologgen.conf and put it in a directory named "config" next to the executable, or you can specify a path with the conf runtime flag.
+
+    ./gologgen_linux_amd64 -conf=simple1.conf
+
+You might want to bump the log level as well if you're curious about the steps it's taking. WARN is the default.
+
+     ./gologgen_linux_amd64 -conf=simple1.conf -level=INFO
+
+The generated log lines either come from data files (JSON descriptions of log lines) or replay files (a capture of live log data). An example of each is in the repo.
+
+## Global Configuration File
+
+This file stores global variables in a JSON object. By default, the program will look for gologgen.conf in a config directory alongside the executable, but you can set the conf to what and wherever with the *conf* flag at runtime. The file only needs the configs related to the OutputType, and will safely ignore unrelated configs if they are present. The current options are:
 
 Conf Parameter | Notes
 --------- | -----
@@ -22,7 +36,9 @@ FileOutputPath | Path of the file to write out to. Will *overwrite* whatever alr
 DataFiles | Array of objects describing DataFiles. Only contains "Path".
 ReplayFiles | Array of objects describing ReplayFiles. Contains values described below.
 
-The second thing you'll need is some combination of data files (JSON descriptions of log lines) and replay files (plain captures of raw log data). The parameters for each are below. Remember that these parameters go in the DataFile if going that route, or in the gologgen.conf if you're using Replayfiles. The idea is that you can drop in a capture as a replay, without going in and editing it (though you could add wildcards to it if you wanted). If that sounds confusing, just use the examples as a guide.
+## Data File
+
+A Data File is a JSON description of log lines. The parameters for each are below.
 
 DataFile Parameter | Notes
 --------- | -----
@@ -32,12 +48,19 @@ IntervalStdDev | Standard Deviation of the Interval if you want to add some rand
 TimestampFormat | The timestamp format to write on the message. See note below.
 Headers | An array of objects with a Header and Value key, that correspond to http request headers
 
+## Replay File
+
+Replay files are log captures from other devices, which gologgen will then re-parse out and send. As such, the configuration for these actually goes in the *global conf file*. Gologgen will still look for replacement tokens in replay files, so if you want to add those in you can do that too.
+
 Replay Parameter | Notes
 --------- | -----
-Path | Path to the file. This is relative to the executable, and a good idea would be to use the config directory.
-TimestampRegex | A go regular expression that pulls out the timestamp from the log line into named capture groups: year, month, day, hour, minute, second. Most of these are ignored for now (year, month, day), but the others are important.
+Path | Path to the file. This is relative to the executable.
+TimestampRegex | A go regular expression that pulls out the timestamp from the log line into named capture groups: year, month, day, hour, minute, second. Be sure to match *the whole timestamp*, otherwise pieces of it won't get replaced on regeneration.
 TimestampFormat | The timestamp format to write on the message. See note below.
 RepeatInterval | The number of seconds between replays of the file. Be mindful that if you set this to less than the timespan of your data file, things will eventually blow up. (I should probably fix that at some point...)
+Headers | An array of objects with a Header and Value key, that correspond to http request headers
+
+## A Note about Go Timestamp Formats
 
 Most of the above is pretty self explanatory. The only exception being the TimestampFormat. Go does this odd thing when specifying timestamp formats, where you can express the date string however you like, but it **must** correspond to the date and time of:
 
