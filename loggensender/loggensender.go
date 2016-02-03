@@ -20,9 +20,9 @@ var log log15.Logger
 // LogLineProperties holds all the data relevant to running a Log Line
 type LogLineProperties struct {
 	OutputType      string
-	HTTPLoc         string `json:"HTTPLoc"`
 	SyslogType      string
 	SyslogLoc       string
+	HTTPLoc         string              `json:"HTTPLoc"`
 	PostBody        string              `json:"Text"`
 	IntervalSecs    int                 `json:"IntervalSecs"`
 	IntervalStdDev  float64             `json:"IntervalStdDev"`

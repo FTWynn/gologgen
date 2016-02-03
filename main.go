@@ -41,10 +41,11 @@ type DataFileMetaData struct {
 
 // ReplayFileMetaData stores all the info around a replay file
 type ReplayFileMetaData struct {
-	Path            string `json:"Path"`
-	TimestampRegex  string `json:"TimestampRegex"`
-	TimestampFormat string `json:"TimestampFormat"`
-	RepeatInterval  int    `json:"RepeatInterval"`
+	Path            string                           `json:"Path"`
+	TimestampRegex  string                           `json:"TimestampRegex"`
+	TimestampFormat string                           `json:"TimestampFormat"`
+	RepeatInterval  int                              `json:"RepeatInterval"`
+	Headers         []loggensender.LogLineHTTPHeader `json:"Headers"`
 }
 
 // LogGenDataFile represents a data file
@@ -194,7 +195,7 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 			log.Debug("New Start Time: ", startTime)
 			augmentedLine := timeRegex.ReplaceAllString(line, "$[time,stamp]")
 			log.Debug("New augmented line: ", augmentedLine)
-			logLine := loggensender.LogLineProperties{PostBody: augmentedLine, IntervalSecs: replayFile.RepeatInterval, IntervalStdDev: 0, StartTime: startTime, TimestampFormat: replayFile.TimestampFormat}
+			logLine := loggensender.LogLineProperties{PostBody: augmentedLine, IntervalSecs: replayFile.RepeatInterval, IntervalStdDev: 0, StartTime: startTime, TimestampFormat: replayFile.TimestampFormat, Headers: replayFile.Headers}
 			log.Debug("New LogLine Object: ", logLine)
 
 			logLines = append(logLines, logLine)
