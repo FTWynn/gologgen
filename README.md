@@ -6,7 +6,7 @@ gologgen is a generic log generator written in go. I'm writing it because I want
 
 ## Installation
 
-You can use the builds in any directory on the appropriate platform (setting the linux and osx builds to executable before you do). In addition to the binary, you'll need a config file, and some number of data or replay files.
+Grab the latest release from the [Releases Page](https://github.com/FTWynn/gologgen/releases). You can use the builds in any directory on the appropriate platform (setting the linux and osx builds to executable before you do). In addition to the binary, you'll need a config file, and some number of data or replay files.
 
 ## Configuration
 
