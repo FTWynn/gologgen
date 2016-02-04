@@ -55,7 +55,7 @@ type LogGenDataFile struct {
 func init() {
 	// Set global logging levels by the flag, default to WARN if not defined
 	var level string
-	flag.StringVar(&level, "level", "WARN", "a string")
+	flag.StringVar(&level, "level", "INFO", "a string")
 	flag.StringVar(&confPath, "conf", "config/gologgen.conf", "a string")
 
 	flag.Parse()
@@ -72,7 +72,7 @@ func init() {
 	case "ERROR":
 		log.SetLevel(log.ErrorLevel)
 	default:
-		log.SetLevel(log.WarnLevel)
+		log.SetLevel(log.InfoLevel)
 	}
 
 }
@@ -484,7 +484,7 @@ func main() {
 		log.Fatal("0 Processed LogLines in RunTable, exiting")
 	}
 
-	fmt.Println("==== Starting the main event loop (set the log level to INFO for more detail) ====")
+	fmt.Println("==== Starting the main event loop (5 second delay before start) ====")
 
 	// Set up a Ticker and call the dispatcher to create the log lines
 	tickerChannel := time.Tick(1 * time.Second)
