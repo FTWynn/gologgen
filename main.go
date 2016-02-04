@@ -63,13 +63,13 @@ func init() {
 	log.SetFormatter(&log.TextFormatter{ForceColors: true})
 
 	switch level {
-	case "DEBUG":
+	case "DEBUG", "debug", "Debug":
 		log.SetLevel(log.DebugLevel)
-	case "INFO":
+	case "INFO", "info", "Info":
 		log.SetLevel(log.InfoLevel)
-	case "WARN":
+	case "WARN", "Warn", "warn":
 		log.SetLevel(log.WarnLevel)
-	case "ERROR":
+	case "ERROR", "Error", "error":
 		log.SetLevel(log.ErrorLevel)
 	default:
 		log.SetLevel(log.InfoLevel)
