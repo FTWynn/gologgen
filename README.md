@@ -2,6 +2,8 @@
 
 ![Travis Build Badge](https://travis-ci.org/FTWynn/gologgen.svg?branch=master) ![Go report card](http://goreportcard.com/badge/ftwynn/gologgen)
 
+#### Current Release: [2.4.0](https://github.com/FTWynn/gologgen/releases/tag/v2.4.0) - 2/4/2016
+
 gologgen is a generic log generator written in go. I'm writing it because I want to learn golang, and there was a need for a universal, well documented fake log generator at my job. All feedback is greatly appreciated.
 
 ## Installation
