@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -13,12 +14,10 @@ import (
 	"time"
 
 	"github.com/ftwynn/gologgen/loggensender"
-	"github.com/ftwynn/gologgen/loghelper"
 
-	log15 "gopkg.in/inconshreveable/log15.v2"
+	log "github.com/Sirupsen/logrus"
 )
 
-var log log15.Logger
 var confPath string
 
 // GlobalConfStore holds all the config data from the conf file
@@ -61,20 +60,21 @@ func init() {
 
 	flag.Parse()
 
+	log.SetFormatter(&log.TextFormatter{ForceColors: true})
+
 	switch level {
 	case "DEBUG":
-		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlDebug, log15.StdoutHandler))
+		log.SetLevel(log.DebugLevel)
 	case "INFO":
-		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlInfo, log15.StdoutHandler))
+		log.SetLevel(log.InfoLevel)
 	case "WARN":
-		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlWarn, log15.StdoutHandler))
+		log.SetLevel(log.WarnLevel)
 	case "ERROR":
-		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlError, log15.StdoutHandler))
+		log.SetLevel(log.ErrorLevel)
 	default:
-		log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlWarn, log15.StdoutHandler))
+		log.SetLevel(log.WarnLevel)
 	}
 
-	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15LazyFunctionName})
 }
 
 // InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
@@ -82,7 +82,10 @@ func InitializeRunTable(RunTable *map[time.Time][]loggensender.LogLineProperties
 	RunTableObj := *RunTable
 	for _, line := range Lines {
 		log.Debug("========== New Line ==========")
-		log.Debug("The literal time string", "time", line.StartTime)
+		log.WithFields(log.Fields{
+			"time": line.StartTime,
+		}).Debug("The literal time string")
+
 		// Get the log line target start time
 		var targetTime time.Time
 		if line.StartTime == "" {
@@ -96,10 +99,21 @@ func InitializeRunTable(RunTable *map[time.Time][]loggensender.LogLineProperties
 			loc, _ := time.LoadLocation("America/Los_Angeles")
 			targetTime = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), targetHour, targetMin, targetSec, 0, loc).Truncate(time.Second)
 		}
-		log.Debug("The target time is translated to", "targetTime", targetTime)
-		log.Debug("The start time of the ticker is", "tickerStart", tickerStart)
+
+		log.WithFields(log.Fields{
+			"targetTime": targetTime,
+		}).Debug("The target time is translated to")
+
+		log.WithFields(log.Fields{
+			"tickerStart": tickerStart,
+		}).Debug("The start time of the ticker is")
+
 		diff := targetTime.Sub(tickerStart)
-		log.Debug("The diff between target and tickerStart is", "diff", diff)
+
+		log.WithFields(log.Fields{
+			"diff": diff,
+		}).Debug("The diff between target and tickerStart is")
+
 		diffMod := int(math.Abs(float64(int(diff.Seconds()) % line.IntervalSecs)))
 
 		switch {
@@ -111,19 +125,27 @@ func InitializeRunTable(RunTable *map[time.Time][]loggensender.LogLineProperties
 				log.Debug("TickerStart is a multiple of Target's interval, so setting to TickerStart")
 				RunTableObj[tickerStart] = append(RunTableObj[tickerStart], line)
 			} else {
-				log.Debug("Setting a start after ticker start", "startTime", tickerStart.Add(time.Duration(diffMod)*time.Second))
+				log.WithFields(log.Fields{
+					"startTime": tickerStart.Add(time.Duration(diffMod) * time.Second),
+				}).Debug("Setting a start after ticker start")
 				RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)] = append(RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)], line)
 			}
 		}
 
 	}
-	log.Info("Total RunTable buildup", "length", len(RunTableObj))
+
+	log.WithFields(log.Fields{
+		"length": len(RunTableObj),
+	}).Info("Total RunTable buildup")
 
 }
 
 // storeDataFileLogLines takes the conf data, gets the associated files, and puts them in a big list of LogLine Objects
 func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.LogLineProperties) {
-	log.Info("Entering storeDataFileLogLines", "confData", confData, "logLines length", len(logLines))
+	log.WithFields(log.Fields{
+		"confData":        confData,
+		"logLines length": len(logLines),
+	}).Info("Entering storeDataFileLogLines")
 
 	// Return if no data files
 	if len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0 {
@@ -136,21 +158,30 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 	for i := 0; i < len(confData.DataFiles); i++ {
 		dataText, err := ioutil.ReadFile(confData.DataFiles[i].Path)
 		if err != nil {
-			log.Error("Something went amiss on data file read: ", "error_msg", err)
+			log.WithFields(log.Fields{
+				"error_msg": err,
+				"file_path": confData.DataFiles[i].Path,
+			}).Error("Couldn't read in the data file, so ignoring and moving on to the next data file")
+			continue
 		}
 
 		// Convert the data to something we can work with
 		err = json.Unmarshal(dataText, &dataJSON)
 		if err != nil {
-			log.Error("Something went amiss on parsing the data file: ", "error_msg", err)
-			return
+			log.WithFields(log.Fields{
+				"error_msg": err,
+				"file_path": confData.DataFiles[i].Path,
+			}).Error("Couldn't read in text from found data file, so ignoring and moving on to the next data file")
+			continue
 		}
 
 		// Add the parsed fields to the result value
 		for i := 0; i < len(dataJSON.Lines); i++ {
 			// Bail if no Text
-			if dataJSON.Lines[i].PostBody == "" {
-				log.Error("Data Line must have a Text value", "json", dataJSON.Lines[i])
+			if dataJSON.Lines[i].Text == "" {
+				log.WithFields(log.Fields{
+					"json": dataJSON.Lines[i],
+				}).Error("Line in data file must have a Text value")
 				continue
 			}
 			logLines = append(logLines, dataJSON.Lines[i])
@@ -163,7 +194,10 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 
 		file, err := os.Open(replayFile.Path)
 		if err != nil {
-			log.Error("Something went amiss on replay file read: ", "error_msg", err)
+			log.WithFields(log.Fields{
+				"error_msg": err,
+				"path":      replayFile.Path,
+			}).Error("Something went amiss trying to read the replay file")
 		}
 		defer file.Close()
 
@@ -172,15 +206,22 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 
 		// Scan the file through line by line
 		scanner := bufio.NewScanner(file)
+		log.WithFields(log.Fields{
+			"path": replayFile.Path,
+		}).Debug("Scanning replay file")
 		for scanner.Scan() {
-			log.Debug("Scanning file: ", file)
 			line := scanner.Text()
-			log.Debug("Current replay line: ", line)
-			match := timeRegex.FindStringSubmatch(line)
-			log.Debug("Current replay line matches: ", match)
+			log.WithFields(log.Fields{
+				"line": line,
+			}).Debug("Current replay line")
 
-			log.Debug("timeRegex.SubexpName(): ", timeRegex.SubexpNames())
-			log.Debug("match: ", match[1])
+			match := timeRegex.FindStringSubmatch(line)
+			log.WithFields(log.Fields{
+				"whole timestamp match":  match,
+				"timeRegex.SubexpName()": timeRegex.SubexpNames(),
+				"first_submatch":         match[1],
+			}).Debug("Current replay line matches")
+
 			// Put the names for the capture groups in a new map[string]string
 			result := make(map[string]string)
 			for i, name := range timeRegex.SubexpNames() {
@@ -190,13 +231,17 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 				}
 			}
 
-			log.Debug("Remapping to named object: ", result)
 			startTime := result["hour"] + ":" + result["minute"] + ":" + result["second"]
-			log.Debug("New Start Time: ", startTime)
+			log.WithFields(log.Fields{
+				"startTime": startTime,
+			}).Debug("New Start Time")
+
 			augmentedLine := timeRegex.ReplaceAllString(line, "$[time,stamp]")
-			log.Debug("New augmented line: ", augmentedLine)
-			logLine := loggensender.LogLineProperties{PostBody: augmentedLine, IntervalSecs: replayFile.RepeatInterval, IntervalStdDev: 0, StartTime: startTime, TimestampFormat: replayFile.TimestampFormat, Headers: replayFile.Headers}
-			log.Debug("New LogLine Object: ", logLine)
+			log.WithFields(log.Fields{
+				"augmentedLine": augmentedLine,
+			}).Debug("New augmented line")
+
+			logLine := loggensender.LogLineProperties{Text: augmentedLine, IntervalSecs: replayFile.RepeatInterval, IntervalStdDev: 0, StartTime: startTime, TimestampFormat: replayFile.TimestampFormat, Headers: replayFile.Headers}
 
 			logLines = append(logLines, logLine)
 
@@ -223,41 +268,56 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 
 	}
 
-	log.Info("Finished storing normalized log lines", "count", len(logLines))
+	log.WithFields(log.Fields{
+		"count": len(logLines),
+	}).Info("Finished storing normalized log lines")
 	return
 }
 
 func main() {
-	log.Info("Starting main program")
+	fmt.Println("Starting main program")
 
 	// Read in the config file
 	confText, err := ioutil.ReadFile(confPath)
 	if err != nil {
-		log.Error("Something went amiss on global conf file read", "error_msg", err, "text", confText)
-		return
+		log.WithFields(log.Fields{
+			"error_msg": err,
+		}).Fatal("Something went amiss trying to read the global conf file")
 	}
 
 	// Unmarshal the Global Config JSON into a struct
 	var confData GlobalConfStore
 	err = json.Unmarshal(confText, &confData)
 	if err != nil {
-		log.Error("Something went amiss on parsing the global config file: ", "error_msg", err, "text", confText)
-		return
+		log.WithFields(log.Fields{
+			"error_msg": err,
+			"text":      confText,
+		}).Fatal("Something went amiss on parsing the global config file: ")
 	}
-	log.Info("Parsed global config results", "results", confData)
+
+	fmt.Println("Config File Parsed")
+
+	log.WithFields(log.Fields{
+		"confData": confData,
+	}).Debug("Parsed global config results")
 
 	// Bail on essential missing configs
 	if confData.OutputType == "" || (len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0) {
-		log.Error("Configuration was missing either an output type, or input files", "confg", confData)
-		return
+		log.WithFields(log.Fields{
+			"output_type":  confData.OutputType,
+			"data_files":   confData.DataFiles,
+			"replay_files": confData.ReplayFiles,
+		}).Fatal("Configuration was either missing an output type, or had 0 input files")
 	}
 
 	// Initialize the FileHandler if needed
 	if confData.OutputType == "file" {
 		f, err := os.Create(confData.FileOutputPath)
 		if err != nil {
-			log.Error("Error in creating the output file", "FileOutputPath", confData.FileOutputPath)
-			return
+			log.WithFields(log.Fields{
+				"FileOutputPath": confData.FileOutputPath,
+				"error_msg":      err,
+			}).Fatal("Error in creating the output file, exiting")
 		}
 		confData.FileHandler = f
 		defer f.Close()
@@ -272,14 +332,20 @@ func main() {
 	targetTickerTime := time.Now().Add(5 * time.Second).Truncate(time.Second)
 
 	InitializeRunTable(&RunTable, logLines, targetTickerTime)
-	log.Debug("Finished RunTable:\n", "RunTable", RunTable)
+	log.WithFields(log.Fields{
+		"RunTable": RunTable,
+	}).Debug("Finished RunTable")
 
-	log.Info("==================== Starting the main event loop ==================")
+	fmt.Println("LogLines imported")
+
+	fmt.Println("==== Starting the main event loop (set the log level to INFO for more detail) ====")
 
 	// Set up a Ticker and call the dispatcher to create the log lines
 	tickerChannel := time.Tick(1 * time.Second)
 	for thisTime := range tickerChannel {
-		log.Debug("Tick for time", "thisTime", thisTime.Truncate(time.Second))
+		log.WithFields(log.Fields{
+			"thisTime": thisTime.Truncate(time.Second),
+		}).Debug("Tick for time")
 		go loggensender.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
 	}
 
