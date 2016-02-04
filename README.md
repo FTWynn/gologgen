@@ -16,9 +16,9 @@ You can either name your config gologgen.conf and put it in a directory named "c
 
     ./gologgen_linux_amd64 -conf=simple1.conf
 
-You might want to bump the log level as well if you're curious about the steps it's taking. WARN is the default.
+You might want to tweak the log level as well if you're curious about the steps it's taking. INFO is the default.
 
-     ./gologgen_linux_amd64 -conf=simple1.conf -level=INFO
+     ./gologgen_linux_amd64 -conf=simple1.conf -level=DEBUG
 
 The generated log lines either come from data files (JSON descriptions of log lines) or replay files (a capture of live log data). An example of each is in the repo.
 
