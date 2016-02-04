@@ -10,12 +10,9 @@ import (
 	"time"
 
 	"github.com/ftwynn/gologgen/loggenmunger"
-	"github.com/ftwynn/gologgen/loghelper"
 
-	log15 "gopkg.in/inconshreveable/log15.v2"
+	log "github.com/Sirupsen/logrus"
 )
-
-var log log15.Logger
 
 // LogLineProperties holds all the data relevant to running a Log Line
 type LogLineProperties struct {
@@ -23,7 +20,7 @@ type LogLineProperties struct {
 	SyslogType      string
 	SyslogLoc       string
 	HTTPLoc         string              `json:"HTTPLoc"`
-	PostBody        string              `json:"Text"`
+	Text            string              `json:"Text"`
 	IntervalSecs    int                 `json:"IntervalSecs"`
 	IntervalStdDev  float64             `json:"IntervalStdDev"`
 	TimestampFormat string              `json:"TimestampFormat"`
@@ -39,18 +36,24 @@ type LogLineHTTPHeader struct {
 	Value  string `json:"Value"`
 }
 
-// I'm not really sure why this bit is required (and doesn't overwrite what's in main)... I may need to build my own logging library so I can grasp all the particulars
-func init() {
-	log15.Root().SetHandler(log15.LvlFilterHandler(log15.LvlError, log15.StdoutHandler))
-	log = log15.New("function", log15.Lazy{Fn: loghelper.Log15LazyFunctionName})
-}
-
 // DispatchLogs takes a slice of Log Lines and a time and fires the ones listed, re-adding them to the Run Table where the next run should go
 func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Time) {
 
-	log.Info("Starting Dispatch Logs")
 	RunTableObj := *RunTable
-	log.Info("Starting Dispatch Logs", "time", ThisTime, "length", len(RunTableObj[ThisTime]))
+
+	// If no log lines, clean up and exit
+	if len(RunTableObj[ThisTime]) == 0 {
+		delete(RunTableObj, ThisTime)
+		log.WithFields(log.Fields{
+			"time": ThisTime,
+		}).Info("No logs to dispatch, exiting")
+		return
+	}
+
+	log.WithFields(log.Fields{
+		"time":  ThisTime,
+		"count": len(RunTableObj[ThisTime]),
+	}).Info("Starting Dispatch Logs")
 
 	// get a rand object for later
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -68,21 +71,25 @@ func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Tim
 			nextInterval = 1000
 		}
 		nextTime := ThisTime.Add(time.Duration(nextInterval) * time.Millisecond).Truncate(time.Second)
-		log.Info("SCHEDULED - Next log run", "line", line.PostBody, "nextTime", nextTime)
+		log.WithFields(log.Fields{
+			"line":     line.Text,
+			"nextTime": nextTime,
+		}).Info("SCHEDULED - Next log run")
 		RunTableObj[nextTime] = append(RunTableObj[nextTime], line)
 
 	}
 
 	delete(RunTableObj, ThisTime)
-	log.Info("Finished dispatching logs", "time", ThisTime)
+	log.WithFields(log.Fields{
+		"time": ThisTime,
+	}).Info("Finished dispatching logs")
 }
 
 // RunLogLine runs an instance of a log line through the appropriate output
 func RunLogLine(params LogLineProperties, sendTime time.Time) {
-	log.Info("Starting Individual Log Runner", "time", sendTime, "logline", params.PostBody)
 
-	// Randomize the post body if need be
-	var stringBody = []byte(loggenmunger.RandomizeString(params.PostBody, params.TimestampFormat))
+	// Randomize the text if need be
+	var stringBody = []byte(loggenmunger.RandomizeString(params.Text, params.TimestampFormat))
 
 	switch params.OutputType {
 	case "http":
@@ -92,46 +99,73 @@ func RunLogLine(params LogLineProperties, sendTime time.Time) {
 	case "file":
 		go sendLogLineFile(stringBody, params)
 	}
-	log.Info("Finished Individual Log Runner", "time", sendTime, "logline", params.PostBody)
 }
 
 // sendLogLineHTTP sends the log line to the http endpoint, retrying if need be
 func sendLogLineHTTP(client *http.Client, stringBody []byte, params LogLineProperties) {
-	// Post to Sumo
-	log.Info("Sending log to Sumo over HTTP", "line", string(stringBody))
+	// Post to HTTP
+	log.WithFields(log.Fields{
+		"line": string(stringBody),
+	}).Info("Sending log over HTTP")
+
 	req, err := http.NewRequest("POST", params.HTTPLoc, bytes.NewBuffer(stringBody))
 	for _, header := range params.Headers {
 		req.Header.Add(header.Header, header.Value)
 	}
-	log.Debug("Request object to send to Sumo", "request", req)
+	log.WithFields(log.Fields{
+		"request": req,
+	}).Debug("Request object to send to Sumo")
+
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
 	if err != nil {
-		log.Error("Something went amiss on submitting to Sumo", "error_msg", err, "line", string(stringBody))
+		log.WithFields(log.Fields{
+			"error_msg": err,
+			"line":      string(stringBody),
+		}).Error("Something went wrong with the http client")
 		return
 	}
+
+	// For non 200 StatusCode, retry 5 times and then give up
 	if resp.StatusCode != 200 {
 		log.Debug("Non 200 response, retrying")
 		for i := 0; i < 5; i++ {
-			log.Debug("Retrying", "attemptNumber", i+1)
+			log.WithFields(log.Fields{
+				"attemptNumber": i + 1,
+			}).Debug("Retrying HTTP Post")
 			resp2, err := client.Do(req)
 			defer resp.Body.Close()
 			if resp2.StatusCode == 200 && err == nil {
 				break
 			}
+			if i == 4 {
+				log.WithFields(log.Fields{
+					"error_msg": err,
+					"line":      string(stringBody),
+				}).Error("Got non-200 response from HTTP Location and retries failed")
+			}
 			time.Sleep(time.Duration(10) * time.Second)
 		}
 	}
-	log.Debug("Response from Sumo", "statusCode", resp.StatusCode)
+	log.WithFields(log.Fields{
+		"statusCode": resp.StatusCode,
+	}).Debug("Response from Sumo")
 }
 
 //sendLogLineSyslog sends the log on tcp/udp, WITHOUT retrying
 func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
-	log.Info("Sending log to syslog", "line", string(stringBody), "location", params.SyslogLoc)
+	log.WithFields(log.Fields{
+		"line":     string(stringBody),
+		"location": params.SyslogLoc,
+	}).Info("Sending log to syslog")
 
 	conn, err := net.Dial(params.SyslogType, params.SyslogLoc)
 	if err != nil {
-		log.Error("Failed to create syslog connection, abandoning", "error_msg", err, "type", params.SyslogType, "syslogLocation", params.SyslogLoc)
+		log.WithFields(log.Fields{
+			"error_msg":      err,
+			"type":           params.SyslogType,
+			"syslogLocation": params.SyslogLoc,
+		}).Error("Failed to create syslog connection, abandoning")
 	}
 	defer conn.Close()
 
@@ -140,12 +174,15 @@ func sendLogLineSyslog(stringBody []byte, params LogLineProperties) {
 
 //sendLogLineFile writes log lines to a file
 func sendLogLineFile(stringBody []byte, params LogLineProperties) {
-	log.Info("Writing log to file", "line", string(stringBody))
+	log.WithFields(log.Fields{
+		"line": string(stringBody),
+	}).Info("Writing log to file")
 
 	_, err := params.FileHandler.Write(append(stringBody, []byte("\n")...))
 	if err != nil {
-		log.Error("Error writing to file", "error_msg", err)
-		panic(err)
+		log.WithFields(log.Fields{
+			"error_msg": err,
+		}).Fatal("Error writing to file")
 	}
 
 }

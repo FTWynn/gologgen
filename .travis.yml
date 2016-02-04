@@ -4,6 +4,6 @@ go:
   - tip
 
 install:
-  - go get gopkg.in/inconshreveable/log15.v2
+  - go get github.com/Sirupsen/logrus
   - go get github.com/ftwynn/gologgen/loggensender
   - go get github.com/ftwynn/gologgen/loggenmunger
