@@ -434,8 +434,7 @@ func main() {
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error_msg": err,
-			"text":      string(confText),
-		}).Fatal("Something went amiss on parsing the global config file")
+		}).Fatal("Something went amiss on parsing the global config file. Is the config a valid JSON Object?")
 	}
 
 	fmt.Println("Config File Parsed")
