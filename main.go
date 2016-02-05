@@ -11,6 +11,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ftwynn/gologgen/loggensender"
@@ -55,21 +56,23 @@ type LogGenDataFile struct {
 func init() {
 	// Set global logging levels by the flag, default to WARN if not defined
 	var level string
-	flag.StringVar(&level, "level", "INFO", "a string")
+	flag.StringVar(&level, "level", "WARN", "a string")
 	flag.StringVar(&confPath, "conf", "config/gologgen.conf", "a string")
 
 	flag.Parse()
 
+	level = strings.ToUpper(level)
+
 	log.SetFormatter(&log.TextFormatter{ForceColors: true})
 
 	switch level {
-	case "DEBUG", "debug", "Debug":
+	case "DEBUG":
 		log.SetLevel(log.DebugLevel)
-	case "INFO", "info", "Info":
+	case "INFO":
 		log.SetLevel(log.InfoLevel)
-	case "WARN", "Warn", "warn":
+	case "WARN":
 		log.SetLevel(log.WarnLevel)
-	case "ERROR", "Error", "error":
+	case "ERROR":
 		log.SetLevel(log.ErrorLevel)
 	default:
 		log.SetLevel(log.InfoLevel)

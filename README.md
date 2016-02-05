@@ -18,7 +18,7 @@ You can either name your config gologgen.conf and put it in a directory named "c
 
     ./gologgen_linux_amd64 -conf=simple1.conf
 
-You might want to tweak the log level as well if you're curious about the steps it's taking. INFO is the default.
+You might want to tweak the log level as well if you're curious about the steps it's taking. WARN is the default.
 
      ./gologgen_linux_amd64 -conf=simple1.conf -level=DEBUG
 
