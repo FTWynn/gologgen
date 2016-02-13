@@ -221,6 +221,15 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 			}).Debug("Current replay line")
 
 			match := timeRegex.FindStringSubmatch(line)
+
+			if match == nil {
+				log.WithFields(log.Fields{
+					"Regex": replayFile.TimestampRegex,
+					"line":  line,
+				}).Warn("Timestamp regex doesn't match the current line in the replay file, skipping line")
+				continue
+			}
+
 			log.WithFields(log.Fields{
 				"whole timestamp match":  match,
 				"timeRegex.SubexpName()": timeRegex.SubexpNames(),
