@@ -44,7 +44,7 @@ A Data File is a JSON description of log lines. The parameters for each are belo
 
 DataFile Parameter | Notes
 --------- | -----
-Text | Log message to write. The text is always interpreted literally except for the three wildcard segments: $[time||stamp], $[integer||integer], and $[string||string||...]. The first inserts the timestamp at the location. The second inserts a random integer between the two values. The third picks a random string and inserts it.
+Text | Log message to write. The text is always interpreted literally except for the three wildcard formats. See below for details.
 IntervalSecs | Interval in seconds to repeat the message. The minimum value is 1.
 IntervalStdDev | Standard Deviation of the Interval if you want to add some randomness. Specified as a float.
 TimestampFormat | The timestamp format to write on the message. See note below.
@@ -61,6 +61,24 @@ TimestampRegex | A go regular expression that pulls out the timestamp from the l
 TimestampFormat | The timestamp format to write on the message. See note below.
 RepeatInterval | The number of seconds between replays of the file. Be mindful that if you set this to less than the timespan of your data file, things will eventually blow up. (I should probably fix that at some point...)
 Headers | An array of objects with a Header and Value key, that correspond to http request headers
+
+## Wildcard Formats
+
+gologgen provides support for a few wildcard types in the Data File Text line, as well as lines in Replay Files.
+
+Timestamp Insertion:
+
+    $[time||stamp]
+
+Random Integer Generation:
+
+    $[2||10]
+
+Random String Selection:
+
+    $[Thing1||Thing2||Thing3...||ThingN]
+
+Timestamps will always be formatted according to the appropriate formatting regex in the config. Integers on the left must be smaller than integers on the right. String lists can be of any length, but they cannot be nested.
 
 ## A Note about Go Timestamp Formats
 
