@@ -87,7 +87,7 @@ func getOneToken(tokenString string, timeformat string) (string, error) {
 	}).Debug("Removing the formatting from the item list")
 
 	// Split the randomizer into individual items
-	itemList := strings.Split(tempstring, ",")
+	itemList := strings.Split(tempstring, "||")
 	log.WithFields(log.Fields{
 		"itemList": itemList,
 		"count":    len(itemList),

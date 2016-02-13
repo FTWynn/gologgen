@@ -1,7 +1,7 @@
 {
   "lines" : [
     {
-      "Text" : "$[time,stamp] Test Random Numbers: $[0,5] $[8,10]",
+      "Text" : "$[time||stamp] Test Random Numbers: $[0||5] $[8||10]",
       "IntervalSecs" : 4,
       "IntervalStdDev" : 0.5,
       "TimestampFormat" : "Jan 02 15:04:05",
@@ -17,7 +17,7 @@
         ]
     },
     {
-      "Text" : "$[time,stamp] Test Random Category: $[Post,Thing,Stuff]",
+      "Text" : "$[time||stamp] Test Random Category: $[Post||Thing||Stuff]",
       "IntervalSecs" : 4,
       "IntervalStdDev" : 1,
       "TimestampFormat" : "epoch",
@@ -49,7 +49,7 @@
         ]
     },
     {
-      "Text" : "$[time,stamp] Rock Solid Repeater",
+      "Text" : "$[time||stamp] Rock Solid Repeater",
       "IntervalSecs" : 5,
       "IntervalStdDev" : 0,
       "StartTime" : "12:03:01",

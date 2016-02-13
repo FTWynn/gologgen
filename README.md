@@ -2,7 +2,7 @@
 
 ![Travis Build Badge](https://travis-ci.org/FTWynn/gologgen.svg?branch=master) ![Go report card](http://goreportcard.com/badge/ftwynn/gologgen)
 
-#### Current Release: [2.4.0](https://github.com/FTWynn/gologgen/releases/tag/v2.4.0) - 2/4/2016
+#### Current Release (Big Config Change): [2.5.0](https://github.com/FTWynn/gologgen/releases/tag/v2.5.0) - 2/12/2016
 
 gologgen is a generic log generator written in go. I'm writing it because I want to learn golang, and there was a need for a universal, well documented fake log generator at my job. All feedback is greatly appreciated.
 
@@ -44,7 +44,7 @@ A Data File is a JSON description of log lines. The parameters for each are belo
 
 DataFile Parameter | Notes
 --------- | -----
-Text | Log message to write. The text is always interpreted literally except for the three wildcard segments: $[time,stamp], $[integer,integer], and $[string,string,...]. The first inserts the timestamp at the location. The second inserts a random integer between the two values. The third picks a random string and inserts it.
+Text | Log message to write. The text is always interpreted literally except for the three wildcard segments: $[time||stamp], $[integer||integer], and $[string||string||...]. The first inserts the timestamp at the location. The second inserts a random integer between the two values. The third picks a random string and inserts it.
 IntervalSecs | Interval in seconds to repeat the message. The minimum value is 1.
 IntervalStdDev | Standard Deviation of the Interval if you want to add some randomness. Specified as a float.
 TimestampFormat | The timestamp format to write on the message. See note below.
