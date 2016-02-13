@@ -138,9 +138,9 @@ func getOneToken(tokenString string, timeformat string) (string, error) {
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error_msg": err,
-			}).Error("Formatting the timestamp broke")
+			}).Error("Formatting the timestamp failed. Please make sure the timestamp format corresponds to the date of 01/02 03:04:05PM '06 -0700. Replacing timestamp with TIME_FORMAT_ERROR.")
 		}
-		return timeformatted, nil
+		return timeformatted, err
 	}
 
 	// Failure case. Should never happen.
@@ -148,7 +148,10 @@ func getOneToken(tokenString string, timeformat string) (string, error) {
 }
 
 func formatTimestamp(t time.Time, timeformat string) (string, error) {
-	log.Debug("Current time: ", "now - ", t)
+	log.WithFields(log.Fields{
+		"now": t,
+	}).Debug("Current time: ")
+
 	var timeformatted string
 	switch timeformat {
 	case "epoch":
@@ -160,6 +163,21 @@ func formatTimestamp(t time.Time, timeformat string) (string, error) {
 	default:
 		timeformatted = t.Format(timeformat)
 	}
-	log.Debug("Formatted time: ", "now - ", timeformatted)
+
+	log.WithFields(log.Fields{
+		"FormattedTime": timeformatted,
+	}).Debug("Formatted time: ")
+
+	if timeformat != "epoch" && timeformat != "epochmilli" && timeformat != "epochnano" {
+		// The only way I could think of to verify a time format string was to
+		// parse the formatted date back to a time object and check for errors
+		// Wierdly, it will still try to give you a time if the format is bad.
+		_, err := time.Parse(timeformat, timeformatted)
+		if err != nil || timeformatted == timeformat {
+			return "TIME_FORMAT_ERROR", err
+		}
+
+	}
+
 	return timeformatted, nil
 }
