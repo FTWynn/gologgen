@@ -3,7 +3,6 @@ package loggensender
 import (
 	"bytes"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -36,68 +35,20 @@ type LogLineHTTPHeader struct {
 	Value  string `json:"Value"`
 }
 
-// DispatchLogs takes a slice of Log Lines and a time and fires the ones listed, re-adding them to the Run Table where the next run should go
-func DispatchLogs(RunTable *map[time.Time][]LogLineProperties, ThisTime time.Time) {
-
-	RunTableObj := *RunTable
-
-	// If no log lines, clean up and exit
-	if len(RunTableObj[ThisTime]) == 0 {
-		delete(RunTableObj, ThisTime)
-		log.WithFields(log.Fields{
-			"time": ThisTime,
-		}).Info("No logs to dispatch, exiting")
-		return
-	}
-
-	log.WithFields(log.Fields{
-		"time":  ThisTime,
-		"count": len(RunTableObj[ThisTime]),
-	}).Info("Starting Dispatch Logs")
-
-	// get a rand object for later
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	lines := RunTableObj[ThisTime]
-	for _, line := range lines {
-		go RunLogLine(line, ThisTime)
-
-		// Insert into RunTable for the next run
-		// Randomize the Interval by specifying the std dev and adding the desired mean
-		milliseconds := line.IntervalSecs * 1000
-		stdDevMilli := line.IntervalStdDev * 1000.0
-		nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
-		if nextInterval < 1000 {
-			nextInterval = 1000
-		}
-		nextTime := ThisTime.Add(time.Duration(nextInterval) * time.Millisecond).Truncate(time.Second)
-		log.WithFields(log.Fields{
-			"line":     line.Text,
-			"nextTime": nextTime,
-		}).Info("SCHEDULED - Next log run")
-		RunTableObj[nextTime] = append(RunTableObj[nextTime], line)
-
-	}
-
-	delete(RunTableObj, ThisTime)
-	log.WithFields(log.Fields{
-		"time": ThisTime,
-	}).Info("Finished dispatching logs")
-}
-
 // RunLogLine runs an instance of a log line through the appropriate output
-func RunLogLine(params LogLineProperties, sendTime time.Time) {
+func RunLogLine(runQueue chan LogLineProperties) {
+	for params := range runQueue {
+		// Randomize the text if need be
+		var stringBody = []byte(loggenmunger.RandomizeString(params.Text, params.TimestampFormat))
 
-	// Randomize the text if need be
-	var stringBody = []byte(loggenmunger.RandomizeString(params.Text, params.TimestampFormat))
-
-	switch params.OutputType {
-	case "http":
-		go sendLogLineHTTP(params.HTTPClient, stringBody, params)
-	case "syslog":
-		go sendLogLineSyslog(stringBody, params)
-	case "file":
-		go sendLogLineFile(stringBody, params)
+		switch params.OutputType {
+		case "http":
+			go sendLogLineHTTP(params.HTTPClient, stringBody, params)
+		case "syslog":
+			go sendLogLineSyslog(stringBody, params)
+		case "file":
+			go sendLogLineFile(stringBody, params)
+		}
 	}
 }
 

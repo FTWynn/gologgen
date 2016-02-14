@@ -48,6 +48,7 @@ Text | Log message to write. The text is always interpreted literally except for
 IntervalSecs | Interval in seconds to repeat the message. The minimum value is 1.
 IntervalStdDev | Standard Deviation of the Interval if you want to add some randomness. Specified as a float.
 TimestampFormat | The timestamp format to write on the message. See note below.
+StartTime | A string in the form of HH:mm:ss that denotes a start time to start the message sending. If the program begins earlier than this time, it will fire at the appropriate time. If the program starts after this time, then it will fire on the first multiple of the interval time after the program starts.
 Headers | An array of objects with a Header and Value key, that correspond to http request headers
 
 ## Replay File

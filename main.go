@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"math/rand"
 	"net/http"
 	"os"
 	"regexp"
@@ -81,12 +82,12 @@ func init() {
 }
 
 // InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
-func InitializeRunTable(RunTable *map[time.Time][]loggensender.LogLineProperties, Lines []loggensender.LogLineProperties, tickerStart time.Time) {
-	RunTableObj := *RunTable
+func queueLogLines(Lines []loggensender.LogLineProperties, tickerStart time.Time, runQueue chan loggensender.LogLineProperties) {
 	for _, line := range Lines {
 		log.Debug("========== New Line ==========")
 		log.WithFields(log.Fields{
 			"time": line.StartTime,
+			"line": line,
 		}).Debug("The literal time string")
 
 		// Get the log line target start time
@@ -94,6 +95,7 @@ func InitializeRunTable(RunTable *map[time.Time][]loggensender.LogLineProperties
 		if line.StartTime == "" {
 			targetTime = tickerStart
 		} else {
+			// Use regex to take in what the start time should be
 			re := regexp.MustCompile(`\d+`)
 			targetHourMinSec := re.FindAllString(line.StartTime, -1)
 			targetHour, _ := strconv.Atoi(targetHourMinSec[0])
@@ -121,39 +123,54 @@ func InitializeRunTable(RunTable *map[time.Time][]loggensender.LogLineProperties
 
 		switch {
 		case targetTime.Equal(tickerStart) || targetTime.After(tickerStart):
-			log.Debug("Target is equal to or after start, so appending to Run Table as is")
-			RunTableObj[targetTime] = append(RunTableObj[targetTime], line)
+			log.Debug("Target is equal to or after start, so queuing with target time")
+			go sleepAndSend(runQueue, targetTime, line)
 		case targetTime.Before(tickerStart):
 			if diffMod == 0 {
 				log.Debug("TickerStart is a multiple of Target's interval, so setting to TickerStart")
-				RunTableObj[tickerStart] = append(RunTableObj[tickerStart], line)
+				go sleepAndSend(runQueue, tickerStart, line)
 			} else {
 				log.WithFields(log.Fields{
 					"startTime": tickerStart.Add(time.Duration(diffMod) * time.Second),
 				}).Debug("Setting a start after ticker start")
-				RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)] = append(RunTableObj[tickerStart.Add(time.Duration(diffMod)*time.Second)], line)
+				go sleepAndSend(runQueue, tickerStart.Add(time.Duration(diffMod)*time.Second), line)
 			}
 		}
 
 	}
 
-	log.WithFields(log.Fields{
-		"length": len(RunTableObj),
-	}).Info("Total RunTable buildup")
+}
 
+func sleepAndSend(runQueue chan loggensender.LogLineProperties, targetTime time.Time, logline loggensender.LogLineProperties) {
+	currentTime := time.Now()
+	time.Sleep(targetTime.Sub(currentTime))
+
+	log.WithFields(log.Fields{
+		"line":       logline.Text,
+		"targetTime": targetTime,
+	}).Debug("Queuing line")
+	runQueue <- logline
+
+	// Calculate next run time
+	// Randomize the Interval by specifying the std dev and adding the desired mean
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	milliseconds := logline.IntervalSecs * 1000
+	stdDevMilli := logline.IntervalStdDev * 1000.0
+	nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
+	nextTime := currentTime.Add(time.Duration(nextInterval) * time.Millisecond)
+	log.WithFields(log.Fields{
+		"line":     logline.Text,
+		"nextTime": nextTime,
+	}).Debug("SCHEDULED - Next log run")
+
+	go sleepAndSend(runQueue, nextTime, logline)
 }
 
 // storeDataFileLogLines takes the conf data, gets the associated files, and puts them in a big list of LogLine Objects
-func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.LogLineProperties) {
+func parseAndStoreLogLines(confData GlobalConfStore, targetStartTime time.Time) (logLines []loggensender.LogLineProperties) {
 	log.WithFields(log.Fields{
-		"confData":        confData,
-		"logLines length": len(logLines),
-	}).Info("Entering storeDataFileLogLines")
-
-	// Return if no data files
-	if len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0 {
-		log.Error("No data files or replay files were found in the global config file.")
-	}
+		"confData": confData,
+	}).Info("Entering parseAndQueueLogLines")
 
 	dataJSON := LogGenDataFile{}
 
@@ -180,15 +197,8 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 
 		validateDataFile(&dataJSON)
 
-		// Add the parsed fields to the result value
+		// Add the parsed fields to the queue
 		for i := 0; i < len(dataJSON.Lines); i++ {
-			// Bail if no Text
-			if dataJSON.Lines[i].Text == "" {
-				log.WithFields(log.Fields{
-					"json": dataJSON.Lines[i],
-				}).Error("Every line in a data file must have a Text value")
-				continue
-			}
 			logLines = append(logLines, dataJSON.Lines[i])
 		}
 	}
@@ -250,7 +260,8 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 				"startTime": startTime,
 			}).Debug("New Start Time")
 
-			augmentedLine := timeRegex.ReplaceAllString(line, "$[time,stamp]")
+			// Replace the line with the $[time||stamp] token for replacement
+			augmentedLine := timeRegex.ReplaceAllString(line, "$[time||stamp]")
 			log.WithFields(log.Fields{
 				"augmentedLine": augmentedLine,
 			}).Debug("New augmented line")
@@ -279,6 +290,9 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 		if logLines[i].SyslogLoc == "" {
 			logLines[i].SyslogLoc = confData.SyslogLoc
 		}
+		if logLines[i].StartTime == "" {
+			logLines[i].StartTime = targetStartTime.Format("15:04:05")
+		}
 
 	}
 
@@ -291,6 +305,15 @@ func storeDataFileLogLines(confData GlobalConfStore) (logLines []loggensender.Lo
 // validateConfFile ONLY does sanity checks on the values inside the conf file.
 // The data file validation is handled elsewhere
 func validateConfFile(confData *GlobalConfStore) {
+
+	// File must have some defined inputs
+	if len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0 {
+		log.WithFields(log.Fields{
+			"output_type":  confData.OutputType,
+			"data_files":   confData.DataFiles,
+			"replay_files": confData.ReplayFiles,
+		}).Fatal("Configuration file had 0 input files")
+	}
 
 	// Confirm the OutputType is valid
 	if confData.OutputType != "http" && confData.OutputType != "syslog" && confData.OutputType != "file" {
@@ -413,6 +436,14 @@ func validateDataFile(dataJSON *LogGenDataFile) {
 				continue
 			}
 
+			// No good way to check for this only when necessary
+			/*// Confirm the Start Time is valid
+			if r, _ := regexp.Compile(`^\d\d:\d\d:\d\d`); !(r.MatchString(dataJSON.Lines[i].StartTime)) {
+				log.WithFields(log.Fields{
+					"StartTime": dataJSON.Lines[i].StartTime,
+				}).Fatal("Start time must be of the form HH:mm:ss")
+			}*/
+
 			// Confirm all the Headers have the needed fields, if any exist
 			if len(dataJSON.Lines[i].Headers) > 0 {
 				for k := 0; k < len(dataJSON.Lines[i].Headers); k++ {
@@ -453,15 +484,6 @@ func main() {
 
 	validateConfFile(&confData)
 
-	// Bail on essential missing configs
-	if confData.OutputType == "" || (len(confData.DataFiles) == 0 && len(confData.ReplayFiles) == 0) {
-		log.WithFields(log.Fields{
-			"output_type":  confData.OutputType,
-			"data_files":   confData.DataFiles,
-			"replay_files": confData.ReplayFiles,
-		}).Fatal("Configuration was either missing an output type, or had 0 input files")
-	}
-
 	// Initialize the FileHandler if needed
 	if confData.OutputType == "file" {
 		f, err := os.Create(confData.FileOutputPath)
@@ -475,35 +497,24 @@ func main() {
 		defer f.Close()
 	}
 
-	// Create an object to store DataFile LogLines
-	logLines := storeDataFileLogLines(confData)
+	runQueue := make(chan loggensender.LogLineProperties)
 
-	RunTable := make(map[time.Time][]loggensender.LogLineProperties)
-
-	// Add in some delay before starting off the ticker because we're not sure how long it will take to initialize our lines into the RunTable
-	targetTickerTime := time.Now().Add(5 * time.Second).Truncate(time.Second)
-
-	InitializeRunTable(&RunTable, logLines, targetTickerTime)
-	log.WithFields(log.Fields{
-		"RunTable": RunTable,
-	}).Debug("Finished RunTable")
-
-	fmt.Println("LogLines imported")
-
-	// Bail if all lines were skipped for some reason (bad file paths, etc)
-	if len(RunTable) == 0 {
-		log.Fatal("0 Processed LogLines in RunTable, exiting")
+	//Spawn worker pool to keep the queue processing
+	for w := 1; w < 10; w++ {
+		go loggensender.RunLogLine(runQueue)
 	}
 
-	fmt.Println("==== Starting the main event loop (5 second delay before start) ====")
+	// Add in some delay before starting because we're not sure how long it will take to parse the lines
+	targetStartTime := time.Now().Add(5 * time.Second).Truncate(time.Second)
 
-	// Set up a Ticker and call the dispatcher to create the log lines
-	tickerChannel := time.Tick(1 * time.Second)
-	for thisTime := range tickerChannel {
-		log.WithFields(log.Fields{
-			"thisTime": thisTime.Truncate(time.Second),
-		}).Debug("Tick for time")
-		go loggensender.DispatchLogs(&RunTable, thisTime.Truncate(time.Second))
-	}
+	// Create an object to store LogLines
+	logLines := parseAndStoreLogLines(confData, targetStartTime)
+
+	// Kick off sending of all log lines over a channel
+	queueLogLines(logLines, targetStartTime, runQueue)
+
+	// Set up a channel that will never receive data to keep main loop open
+	delay := make(chan int)
+	<-delay
 
 }
