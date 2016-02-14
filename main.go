@@ -143,12 +143,20 @@ func queueLogLines(Lines []loggensender.LogLineProperties, tickerStart time.Time
 
 func sleepAndSend(runQueue chan loggensender.LogLineProperties, targetTime time.Time, logline loggensender.LogLineProperties) {
 	currentTime := time.Now()
+
+	log.WithFields(log.Fields{
+		"line":        logline.Text,
+		"targetTime":  targetTime,
+		"currentTime": currentTime,
+	}).Debug("Starting new sleepAndSend")
+
 	time.Sleep(targetTime.Sub(currentTime))
 
 	log.WithFields(log.Fields{
 		"line":       logline.Text,
 		"targetTime": targetTime,
 	}).Debug("Queuing line")
+
 	runQueue <- logline
 
 	// Calculate next run time
@@ -157,12 +165,13 @@ func sleepAndSend(runQueue chan loggensender.LogLineProperties, targetTime time.
 	milliseconds := logline.IntervalSecs * 1000
 	stdDevMilli := logline.IntervalStdDev * 1000.0
 	nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
-	nextTime := currentTime.Add(time.Duration(nextInterval) * time.Millisecond)
+	nextTime := targetTime.Add(time.Duration(nextInterval) * time.Millisecond)
 	log.WithFields(log.Fields{
 		"line":     logline.Text,
 		"nextTime": nextTime,
 	}).Debug("SCHEDULED - Next log run")
 
+	log.Debug("===> calling sleepAndSend from itself")
 	go sleepAndSend(runQueue, nextTime, logline)
 }
 
