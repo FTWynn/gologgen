@@ -193,12 +193,12 @@ func parseAndStoreLogLines(confData GlobalConfStore, targetStartTime time.Time) 
 	dataJSON := LogGenDataFile{}
 
 	// First, read in any data files
-	for i := 0; i < len(confData.DataFiles); i++ {
-		dataText, err := ioutil.ReadFile(confData.DataFiles[i].Path)
+	for _, dataFile := range confData.DataFiles {
+		dataText, err := ioutil.ReadFile(dataFile.Path)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error_msg": err,
-				"file_path": confData.DataFiles[i].Path,
+				"file_path": dataFile.Path,
 			}).Error("Couldn't read in the data file, so ignoring and moving on to the next data file")
 			continue
 		}
@@ -208,7 +208,7 @@ func parseAndStoreLogLines(confData GlobalConfStore, targetStartTime time.Time) 
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error_msg": err,
-				"file_path": confData.DataFiles[i].Path,
+				"file_path": dataFile.Path,
 			}).Error("Couldn't read in text from found data file, so ignoring and moving on to the next data file")
 			continue
 		}
@@ -222,8 +222,7 @@ func parseAndStoreLogLines(confData GlobalConfStore, targetStartTime time.Time) 
 	}
 
 	// Second, read in the replay files
-	for i := 0; i < len(confData.ReplayFiles); i++ {
-		replayFile := confData.ReplayFiles[i]
+	for _, replayFile := range confData.ReplayFiles {
 
 		file, err := os.Open(replayFile.Path)
 		if err != nil {
@@ -292,24 +291,24 @@ func parseAndStoreLogLines(confData GlobalConfStore, targetStartTime time.Time) 
 	}
 
 	// Set individual log lines to global configs / defaults if need be
-	for i := 0; i < len(logLines); i++ {
-		logLines[i].HTTPClient = &confData.HTTPClient
-		logLines[i].FileHandler = confData.FileHandler
+	for _, logLine := range logLines {
+		logLine.HTTPClient = &confData.HTTPClient
+		logLine.FileHandler = confData.FileHandler
 
-		if logLines[i].OutputType == "" {
-			logLines[i].OutputType = confData.OutputType
+		if logLine.OutputType == "" {
+			logLine.OutputType = confData.OutputType
 		}
-		if logLines[i].HTTPLoc == "" {
-			logLines[i].HTTPLoc = confData.HTTPLoc
+		if logLine.HTTPLoc == "" {
+			logLine.HTTPLoc = confData.HTTPLoc
 		}
-		if logLines[i].SyslogType == "" {
-			logLines[i].SyslogType = confData.SyslogType
+		if logLine.SyslogType == "" {
+			logLine.SyslogType = confData.SyslogType
 		}
-		if logLines[i].SyslogLoc == "" {
-			logLines[i].SyslogLoc = confData.SyslogLoc
+		if logLine.SyslogLoc == "" {
+			logLine.SyslogLoc = confData.SyslogLoc
 		}
-		if logLines[i].StartTime == "" {
-			logLines[i].StartTime = targetStartTime.Format("15:04:05")
+		if logLine.StartTime == "" {
+			logLine.StartTime = targetStartTime.Format("15:04:05")
 		}
 
 	}
@@ -378,40 +377,40 @@ func validateConfFile(confData *GlobalConfStore) {
 
 	// Loop over all replay files, if any are present
 	if len(confData.ReplayFiles) > 0 {
-		for i := 0; i < len(confData.ReplayFiles); i++ {
+		for _, replayFile := range confData.ReplayFiles {
 			// Confirm the path is non-blank
-			if confData.ReplayFiles[i].Path == "" {
+			if replayFile.Path == "" {
 				log.Fatal("All replay files must have a non-blank path in the global config")
 			}
 
 			// Confirm the timestamp regex compiles
-			if _, err := regexp.Compile(confData.ReplayFiles[i].TimestampRegex); err != nil {
+			if _, err := regexp.Compile(replayFile.TimestampRegex); err != nil {
 				log.WithFields(log.Fields{
-					"regex":     confData.ReplayFiles[i].TimestampRegex,
+					"regex":     replayFile.TimestampRegex,
 					"error_msg": err,
 				}).Fatal("This regex in the conf file is not valid in the Go regex parser")
 			}
 
 			// Confirm the timestamp format is not blank (I couldn't find an err returning time function)
-			if confData.ReplayFiles[i].TimestampFormat == "" {
+			if replayFile.TimestampFormat == "" {
 				log.Fatal("All replay files must have a TimestampFormat")
 			}
 
 			// Confirm that a Repeat Interval is present
 			// This should be handled by JSON Marshaling, so I just need to check for zero
-			if confData.ReplayFiles[i].RepeatInterval == 0 {
+			if replayFile.RepeatInterval == 0 {
 				log.WithFields(log.Fields{
-					"repeatInterval": confData.ReplayFiles[i].RepeatInterval,
+					"repeatInterval": replayFile.RepeatInterval,
 				}).Fatal("The repeat interval must be a non-zero integer")
 			}
 
 			// Confirm all the Headers have the needed fields, if any exist
-			if len(confData.ReplayFiles[i].Headers) > 0 {
-				for k := 0; k < len(confData.ReplayFiles[i].Headers); k++ {
-					if confData.ReplayFiles[i].Headers[k].Header == "" || confData.ReplayFiles[i].Headers[k].Value == "" {
+			if len(replayFile.Headers) > 0 {
+				for k := 0; k < len(replayFile.Headers); k++ {
+					if replayFile.Headers[k].Header == "" || replayFile.Headers[k].Value == "" {
 						log.WithFields(log.Fields{
-							"Header": confData.ReplayFiles[i].Headers[k].Header,
-							"Value":  confData.ReplayFiles[i].Headers[k].Value,
+							"Header": replayFile.Headers[k].Header,
+							"Value":  replayFile.Headers[k].Value,
 						}).Fatal("Both the header and value need to be non-zero in the replay file definition")
 					}
 				}
@@ -426,20 +425,20 @@ func validateDataFile(dataJSON *LogGenDataFile) {
 
 	// Loop through all line objects in the file
 	if len(dataJSON.Lines) > 0 {
-		for i := 0; i < len(dataJSON.Lines); i++ {
+		for _, logLine := range dataJSON.Lines {
 
 			//Confirm Text field exists
-			if dataJSON.Lines[i].Text == "" {
+			if logLine.Text == "" {
 				log.WithFields(log.Fields{
-					"lineJSON": dataJSON.Lines[i],
+					"lineJSON": logLine,
 				}).Error("Text field cannot be empty string or missing in data file JSON")
 				continue
 			}
 
 			// Confirm IntervalSecs or IntervalSecsMillis are not zero
-			if dataJSON.Lines[i].IntervalSecs == 0 && dataJSON.Lines[i].IntervalMillis == 0 {
+			if logLine.IntervalSecs == 0 && logLine.IntervalMillis == 0 {
 				log.WithFields(log.Fields{
-					"lineJSON": dataJSON.Lines[i],
+					"lineJSON": logLine,
 				}).Error("IntervalSecs and IntervalMillis fields cannot both be 0 or missing in data file JSON")
 				continue
 			}
@@ -447,27 +446,27 @@ func validateDataFile(dataJSON *LogGenDataFile) {
 			// IntervalStdDev can be zero... so no sanity checks possible here
 
 			//Confirm Timestamp format field exists
-			if dataJSON.Lines[i].TimestampFormat == "" {
+			if logLine.TimestampFormat == "" {
 				log.WithFields(log.Fields{
-					"lineJSON": dataJSON.Lines[i],
+					"lineJSON": logLine,
 				}).Error("TimestampFormat field cannot be empty string or missing in data file JSON")
 				continue
 			}
 
 			// No good way to check for this only when necessary
 			/*// Confirm the Start Time is valid
-			if r, _ := regexp.Compile(`^\d\d:\d\d:\d\d`); !(r.MatchString(dataJSON.Lines[i].StartTime)) {
+			if r, _ := regexp.Compile(`^\d\d:\d\d:\d\d`); !(r.MatchString(logLine.StartTime)) {
 				log.WithFields(log.Fields{
-					"StartTime": dataJSON.Lines[i].StartTime,
+					"StartTime": logLine.StartTime,
 				}).Fatal("Start time must be of the form HH:mm:ss")
 			}*/
 
 			// Confirm all the Headers have the needed fields, if any exist
-			if len(dataJSON.Lines[i].Headers) > 0 {
-				for k := 0; k < len(dataJSON.Lines[i].Headers); k++ {
-					if dataJSON.Lines[i].Headers[k].Header == "" || dataJSON.Lines[i].Headers[k].Value == "" {
+			if len(logLine.Headers) > 0 {
+				for k := 0; k < len(logLine.Headers); k++ {
+					if logLine.Headers[k].Header == "" || logLine.Headers[k].Value == "" {
 						log.WithFields(log.Fields{
-							"lineJSON": dataJSON.Lines[i],
+							"lineJSON": logLine,
 						}).Fatal("Both the header and value need to be non-zero in the data file JSON")
 					}
 				}
