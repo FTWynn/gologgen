@@ -21,6 +21,7 @@ import (
 )
 
 var confPath string
+var workers int
 
 // GlobalConfStore holds all the config data from the conf file
 type GlobalConfStore struct {
@@ -57,8 +58,9 @@ type LogGenDataFile struct {
 func init() {
 	// Set global logging levels by the flag, default to WARN if not defined
 	var level string
-	flag.StringVar(&level, "level", "WARN", "a string")
-	flag.StringVar(&confPath, "conf", "config/gologgen.conf", "a string")
+	flag.StringVar(&level, "level", "WARN", "Log level for the gologgen program itself")
+	flag.StringVar(&confPath, "conf", "config/gologgen.conf", "Optional path for the config file")
+	flag.IntVar(&workers, "workers", 10, "Number of workers to spawn for queue processing")
 
 	flag.Parse()
 
@@ -517,7 +519,7 @@ func main() {
 	runQueue := make(chan loggensender.LogLineProperties)
 
 	//Spawn worker pool to keep the queue processing
-	for w := 1; w < 10; w++ {
+	for w := 1; w < workers; w++ {
 		go loggensender.RunLogLine(runQueue)
 	}
 
