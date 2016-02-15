@@ -293,24 +293,24 @@ func parseAndStoreLogLines(confData GlobalConfStore, targetStartTime time.Time) 
 	}
 
 	// Set individual log lines to global configs / defaults if need be
-	for _, logLine := range logLines {
-		logLine.HTTPClient = &confData.HTTPClient
-		logLine.FileHandler = confData.FileHandler
+	for i := 0; i < len(logLines); i++ {
+		logLines[i].HTTPClient = &confData.HTTPClient
+		logLines[i].FileHandler = confData.FileHandler
 
-		if logLine.OutputType == "" {
-			logLine.OutputType = confData.OutputType
+		if logLines[i].OutputType == "" {
+			logLines[i].OutputType = confData.OutputType
 		}
-		if logLine.HTTPLoc == "" {
-			logLine.HTTPLoc = confData.HTTPLoc
+		if logLines[i].HTTPLoc == "" {
+			logLines[i].HTTPLoc = confData.HTTPLoc
 		}
-		if logLine.SyslogType == "" {
-			logLine.SyslogType = confData.SyslogType
+		if logLines[i].SyslogType == "" {
+			logLines[i].SyslogType = confData.SyslogType
 		}
-		if logLine.SyslogLoc == "" {
-			logLine.SyslogLoc = confData.SyslogLoc
+		if logLines[i].SyslogLoc == "" {
+			logLines[i].SyslogLoc = confData.SyslogLoc
 		}
-		if logLine.StartTime == "" {
-			logLine.StartTime = targetStartTime.Format("15:04:05")
+		if logLines[i].StartTime == "" {
+			logLines[i].StartTime = targetStartTime.Format("15:04:05")
 		}
 
 	}
@@ -531,6 +531,8 @@ func main() {
 
 	// Kick off sending of all log lines over a channel
 	queueLogLines(logLines, targetStartTime, runQueue)
+
+	fmt.Println("==== Successfully started the loggen process ====")
 
 	// Set up a channel that will never receive data to keep main loop open
 	delay := make(chan int)
