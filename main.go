@@ -80,7 +80,6 @@ func init() {
 	default:
 		log.SetLevel(log.InfoLevel)
 	}
-
 }
 
 // InitializeRunTable will take a slice of LogLines and start times and put the various lines in their starting slots in the map
@@ -140,7 +139,6 @@ func queueLogLines(Lines []loggensender.LogLineProperties, tickerStart time.Time
 		}
 
 	}
-
 }
 
 func sleepAndSend(runQueue chan loggensender.LogLineProperties, targetTime time.Time, logline loggensender.LogLineProperties) {
@@ -476,7 +474,6 @@ func validateDataFile(dataJSON *LogGenDataFile) {
 
 		}
 	}
-
 }
 
 func main() {
@@ -537,5 +534,4 @@ func main() {
 	// Set up a channel that will never receive data to keep main loop open
 	delay := make(chan int)
 	<-delay
-
 }
