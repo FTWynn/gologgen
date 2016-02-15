@@ -15,18 +15,20 @@ import (
 
 // LogLineProperties holds all the data relevant to running a Log Line
 type LogLineProperties struct {
-	OutputType      string
-	SyslogType      string
-	SyslogLoc       string
-	HTTPLoc         string              `json:"HTTPLoc"`
-	Text            string              `json:"Text"`
-	IntervalSecs    int                 `json:"IntervalSecs"`
-	IntervalStdDev  float64             `json:"IntervalStdDev"`
-	TimestampFormat string              `json:"TimestampFormat"`
-	Headers         []LogLineHTTPHeader `json:"Headers"`
-	StartTime       string              `json:"StartTime"`
-	HTTPClient      *http.Client
-	FileHandler     *os.File
+	OutputType           string
+	SyslogType           string
+	SyslogLoc            string
+	HTTPLoc              string              `json:"HTTPLoc"`
+	Text                 string              `json:"Text"`
+	IntervalSecs         int                 `json:"IntervalSecs"`
+	IntervalStdDev       float64             `json:"IntervalStdDev"`
+	IntervalMillis       int                 `json:"IntervalMillis"`
+	IntervalStdDevMillis int                 `json:"IntervalStdDevMillis"`
+	TimestampFormat      string              `json:"TimestampFormat"`
+	Headers              []LogLineHTTPHeader `json:"Headers"`
+	StartTime            string              `json:"StartTime"`
+	HTTPClient           *http.Client
+	FileHandler          *os.File
 }
 
 // LogLineHTTPHeader holds the key and vlue for each header

@@ -162,16 +162,25 @@ func sleepAndSend(runQueue chan loggensender.LogLineProperties, targetTime time.
 	// Calculate next run time
 	// Randomize the Interval by specifying the std dev and adding the desired mean
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	milliseconds := logline.IntervalSecs * 1000
-	stdDevMilli := logline.IntervalStdDev * 1000.0
-	nextInterval := int(r.NormFloat64()*stdDevMilli + float64(milliseconds))
+	var milliseconds int
+	if logline.IntervalMillis != 0 {
+		milliseconds = logline.IntervalSecs
+	} else {
+		milliseconds = logline.IntervalSecs * 1000
+	}
+	var stdDevMilli int
+	if logline.IntervalMillis != 0 {
+		stdDevMilli = logline.IntervalStdDevMillis
+	} else {
+		stdDevMilli = int(logline.IntervalStdDev * 1000.0)
+	}
+	nextInterval := int(r.NormFloat64()*float64(stdDevMilli) + float64(milliseconds))
 	nextTime := targetTime.Add(time.Duration(nextInterval) * time.Millisecond)
 	log.WithFields(log.Fields{
 		"line":     logline.Text,
 		"nextTime": nextTime,
 	}).Debug("SCHEDULED - Next log run")
 
-	log.Debug("===> calling sleepAndSend from itself")
 	go sleepAndSend(runQueue, nextTime, logline)
 }
 
@@ -388,7 +397,7 @@ func validateConfFile(confData *GlobalConfStore) {
 				log.Fatal("All replay files must have a TimestampFormat")
 			}
 
-			// Confirm the Repeat Interval is an integer
+			// Confirm that a Repeat Interval is present
 			// This should be handled by JSON Marshaling, so I just need to check for zero
 			if confData.ReplayFiles[i].RepeatInterval == 0 {
 				log.WithFields(log.Fields{
@@ -427,11 +436,11 @@ func validateDataFile(dataJSON *LogGenDataFile) {
 				continue
 			}
 
-			// Confirm IntervalSecs is not zero
-			if dataJSON.Lines[i].IntervalSecs == 0 {
+			// Confirm IntervalSecs or IntervalSecsMillis are not zero
+			if dataJSON.Lines[i].IntervalSecs == 0 && dataJSON.Lines[i].IntervalMillis == 0 {
 				log.WithFields(log.Fields{
 					"lineJSON": dataJSON.Lines[i],
-				}).Error("IntervalSecs field cannot be 0 or missing in data file JSON")
+				}).Error("IntervalSecs and IntervalMillis fields cannot both be 0 or missing in data file JSON")
 				continue
 			}
 
