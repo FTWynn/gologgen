@@ -2,7 +2,7 @@
 
 ![Travis Build Badge](https://travis-ci.org/FTWynn/gologgen.svg?branch=master) ![Go report card](http://goreportcard.com/badge/ftwynn/gologgen)
 
-#### Current Release (Big Config Change): [2.5.0](https://github.com/FTWynn/gologgen/releases/tag/v2.5.0) - 2/12/2016
+#### Current Release (Big Behavior Change): [3.0.0](https://github.com/FTWynn/gologgen/releases/tag/v3.0.0) - 2/15/2016
 
 gologgen is a generic log generator written in go. I'm writing it because I want to learn golang, and there was a need for a universal, well documented fake log generator at my job. All feedback is greatly appreciated.
 
@@ -47,6 +47,8 @@ DataFile Parameter | Notes
 Text | Log message to write. The text is always interpreted literally except for the three wildcard formats. See below for details.
 IntervalSecs | Interval in seconds to repeat the message. The minimum value is 1.
 IntervalStdDev | Standard Deviation of the Interval if you want to add some randomness. Specified as a float.
+IntervalMillis | Same as interval, but in Milliseconds. One of the two fields must be provided, and IntervalMillis takes precedence.
+IntervalStdDevMillis | Standard Deviation of the Interval on a milliseconds scale. Provided as an Integer.
 TimestampFormat | The timestamp format to write on the message. See note below.
 StartTime | A string in the form of HH:mm:ss that denotes a start time to start the message sending. If the program begins earlier than this time, it will fire at the appropriate time. If the program starts after this time, then it will fire on the first multiple of the interval time after the program starts.
 Headers | An array of objects with a Header and Value key, that correspond to http request headers
@@ -99,8 +101,7 @@ You can also specify one of three values for epoch time instead: epoch, epochmil
 
 There are a few implications to this structure.
 
-1. You generally can't specify a log to be created more than once per second in a data file. You could list it as two separate items, but because the lowest increment worked on is 1 second, there's no single config for it.
-2. There's currently no way to specify something like "Run every 5 seconds for a 10 minutes window, then stop for an hour." Your best bet presently is to use replay files, which support all the wildcards but not the std deviations, and toy with the replay interval compared to the data listed.
+1. There's currently no way to specify something like "Run every 5 seconds for a 10 minutes window, then stop for an hour." Your best bet presently is to use replay files, which support all the wildcards but not the std deviations, and toy with the replay interval compared to the data listed.
 
 ## Logging for gologgen
 
